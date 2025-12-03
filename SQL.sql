@@ -202,3 +202,156 @@ JOIN team at ON m.away_team_id = at.team_id
 WHERE ht.team_name = %s
    OR at.team_name = %s
 ORDER BY m.date, m.start_time, m.match_id;
+
+-- 打擊率排行榜（AVG） Top 5 
+-- 定義：AVG = hits / at_bats，且至少 30 打席（可以隨意修改）
+SELECT
+    s.player_id,
+    s.player_name,
+    s.team_name,
+    s.total_hits,
+    s.total_at_bats,
+    ROUND(s.total_hits::numeric / NULLIF(s.total_at_bats, 0), 3) AS avg,
+    RANK() OVER (
+        ORDER BY s.total_hits::numeric / NULLIF(s.total_at_bats, 0) DESC
+    ) AS rank
+FROM (
+    SELECT
+        p.player_id,
+        p.name AS player_name,
+        t.team_name,
+        SUM(COALESCE(b.hits, 0)) AS total_hits,
+        SUM(COALESCE(b.at_bats, 0)) AS total_at_bats
+    FROM player p
+    JOIN match_player mp ON mp.player_id = p.player_id
+    JOIN match m ON m.match_id = mp.match_id
+    LEFT JOIN battingrecord b ON b.record_id = mp.record_id
+    LEFT JOIN team t ON t.team_id = p.team_id
+    WHERE EXTRACT(YEAR FROM m.date) = 2025
+    GROUP BY p.player_id, p.name, t.team_name
+) s
+WHERE s.total_at_bats >= 30
+ORDER BY avg DESC
+LIMIT 5;
+
+-- 打擊率排行榜（AVG） Top 5 
+-- 定義：AVG = hits / at_bats，且至少 30 打席（可以隨意修改）
+SELECT
+    s.player_id,
+    s.player_name,
+    s.team_name,
+    s.total_hits,
+    s.total_at_bats,
+    ROUND(s.total_hits::numeric / NULLIF(s.total_at_bats, 0), 3) AS avg,
+    RANK() OVER (
+        ORDER BY s.total_hits::numeric / NULLIF(s.total_at_bats, 0) DESC
+    ) AS rank
+FROM (
+    SELECT
+        p.player_id,
+        p.name AS player_name,
+        t.team_name,
+        SUM(COALESCE(b.hits, 0)) AS total_hits,
+        SUM(COALESCE(b.at_bats, 0)) AS total_at_bats
+    FROM player p
+    JOIN match_player mp ON mp.player_id = p.player_id
+    JOIN match m ON m.match_id = mp.match_id
+    LEFT JOIN battingrecord b ON b.record_id = mp.record_id
+    LEFT JOIN team t ON t.team_id = p.team_id
+    WHERE EXTRACT(YEAR FROM m.date) = 2025
+    GROUP BY p.player_id, p.name, t.team_name
+) s
+WHERE s.total_at_bats >= 30
+ORDER BY avg DESC
+LIMIT 5;
+
+-- -- 全壘打排行榜（HR） Top 5
+SELECT
+    p.player_id,
+    p.name AS player_name,
+    t.team_name,
+    SUM(COALESCE(b.home_runs, 0)) AS total_hr,
+    RANK() OVER (
+        ORDER BY SUM(COALESCE(b.home_runs, 0)) DESC
+    ) AS rank
+FROM player p
+JOIN match_player mp ON mp.player_id = p.player_id
+JOIN match m ON m.match_id = mp.match_id
+LEFT JOIN battingrecord b ON b.record_id = mp.record_id
+LEFT JOIN team t ON t.team_id = p.team_id
+WHERE EXTRACT(YEAR FROM m.date) = 2025
+GROUP BY p.player_id, p.name, t.team_name
+ORDER BY total_hr DESC
+LIMIT 5;
+
+-- ERA 排行 Top 5
+-- 定義：ERA = 9 × 自責分 / 投球局數，且只顯示至少投 10 局的投手
+SELECT
+    p.player_id,
+    p.name AS player_name,
+    t.team_name,
+    SUM(COALESCE(pr.innings_pitched, 0)) AS total_ip,
+    SUM(COALESCE(pr.earned_runs, 0)) AS total_er,
+    ROUND(
+        9 * SUM(COALESCE(pr.earned_runs, 0))::numeric
+        / NULLIF(SUM(COALESCE(pr.innings_pitched, 0)), 0),
+        2
+    ) AS era,
+    RANK() OVER (
+        ORDER BY
+            9 * SUM(COALESCE(pr.earned_runs, 0))::numeric
+            / NULLIF(SUM(COALESCE(pr.innings_pitched, 0)), 0)
+    ) AS rank
+FROM player p
+JOIN match_player mp ON mp.player_id = p.player_id
+JOIN match m ON m.match_id = mp.match_id
+LEFT JOIN pitchingrecord pr ON pr.record_id = mp.record_id
+LEFT JOIN team t ON t.team_id = p.team_id
+WHERE EXTRACT(YEAR FROM m.date) = 2025
+GROUP BY p.player_id, p.name, t.team_name
+HAVING SUM(COALESCE(pr.innings_pitched, 0)) >= 10
+ORDER BY era ASC
+LIMIT 5;
+
+-- 球隊勝率排行榜 Top 5
+-- 定義：勝率 = wins / games，這個定義可以再延申，因爲如果只打一場比賽且獲勝，它的勝率為1是最高的，感覺有bug
+WITH team_games AS (
+    SELECT
+        t.team_id,
+        t.team_name,
+        CASE
+            WHEN m.home_team_id = t.team_id THEN m.home_score
+            ELSE m.away_score
+        END AS team_score,
+        CASE
+            WHEN m.home_team_id = t.team_id THEN m.away_score
+            ELSE m.home_score
+        END AS opp_score
+    FROM team t
+    JOIN match m
+      ON m.home_team_id = t.team_id
+      OR m.away_team_id = t.team_id
+    WHERE EXTRACT(YEAR FROM m.date) = 2025
+),
+team_summary AS (
+    SELECT
+        team_id,
+        team_name,
+        COUNT(*) AS games,
+        SUM(CASE WHEN team_score > opp_score THEN 1 ELSE 0 END) AS wins,
+        SUM(CASE WHEN team_score < opp_score THEN 1 ELSE 0 END) AS losses,
+        SUM(CASE WHEN team_score = opp_score THEN 1 ELSE 0 END) AS ties
+    FROM team_games
+    GROUP BY team_id, team_name
+)
+SELECT
+    team_id,
+    team_name,
+    games,
+    wins,
+    losses,
+    ties,
+    ROUND(wins::numeric / NULLIF(games, 0), 3) AS win_pct
+FROM team_summary
+ORDER BY win_pct DESC
+LIMIT 5;
