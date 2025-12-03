@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>登入系統</title>
+</head>
+<body>
+    <h1>登入</h1>
+
+    <label>使用者名稱：</label>
+    <input type="text" id="username"><br><br>
+
+    <label>密碼：</label>
+    <input type="password" id="password"><br><br>
+
+    <button onclick="login()">登入</button>
+    <button onclick="location.href='register.html'">前往註冊</button>
+
+    <p id="message"></p>
+
+    <script>
+        // -----------------------------
+        // SHA-256 密碼雜湊（與 register.html 相同）
+        // -----------------------------
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // -----------------------------
+        // 登入函式
+        // -----------------------------
+        async function login() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            const messageEl = document.getElementById("message");
+            messageEl.innerHTML = "";
+
+            if (!username || !password) {
+                messageEl.innerHTML = "請填寫所有欄位";
+                return;
+            }
+
+            try {
+                // ✔ 對密碼進行 SHA-256（與註冊一致）
+                const hashedPassword = await hashPassword(password);
+
+                const res = await fetch("http://127.0.0.1:5000/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password: hashedPassword })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    messageEl.innerHTML = "登入成功！跳轉中...";
+
+                    // 保存 user ID
+                    localStorage.setItem("user_id", data.user_id);
+
+                    // ✔ 成功登入後跳轉至 team_search.html
+                    window.location.href = "team_search.html";
+                } else {
+                    messageEl.innerHTML = "登入失敗：" + data.error;
+                }
+            } catch (err) {
+                messageEl.innerHTML = "發生錯誤：" + err;
+            }
+        }
+    </script>
+</body>
+</html>
