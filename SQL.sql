@@ -203,4 +203,26 @@ WHERE ht.team_name = %s
    OR at.team_name = %s
 ORDER BY m.date, m.start_time, m.match_id;
 
--- 
+-- 輸入球隊名稱 → 得到球隊資訊(包含球隊裡的active球員)
+-- 輸入：%s = 球隊名稱
+SELECT
+    t.team_id,
+    t.team_name,
+    t.manager_name,
+    t.team_status,
+    l.league_name,
+
+    p.player_id,
+    p.name AS player_name,
+    p.number,
+    p.status AS player_status
+
+FROM team t
+LEFT JOIN league l
+    ON t.league_id = l.league_id
+LEFT JOIN player p
+    ON p.team_id = t.team_id
+   AND p.status = 'Active'
+
+WHERE t.team_name = %s
+ORDER BY p.number;
