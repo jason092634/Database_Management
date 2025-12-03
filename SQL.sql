@@ -14,7 +14,7 @@ WHERE p.name = 'Shohei Ohtani';
 
 -- 輸入「球員名字 + 賽季」→ 該季打擊 / 投球 / 守備成績（加總）
 --   %s = 球員名字，例如 'Shohei Ohtani'
---   %s = 賽季年份，例如 2025
+--   %s = 賽季年份，例如 2023
 SELECT
     p.player_id,
     p.name AS player_name,
@@ -70,7 +70,7 @@ GROUP BY
 
 
 -- 輸入日期 → 當天所有比賽資訊和結果
--- 輸入：%s = 日期（DATE），例如 '2025-3-19'
+-- 輸入：%s = 日期（DATE），例如 '2023-07-21'
 SELECT
     m.match_id,
     m.date,
@@ -202,20 +202,3 @@ JOIN team at ON m.away_team_id = at.team_id
 WHERE ht.team_name = %s
    OR at.team_name = %s
 ORDER BY m.date, m.start_time, m.match_id;
-
-SELECT
-    p.player_id,
-    p.name       AS player_name,
-    p.number,
-    p.status,
-    t.team_name
-FROM player p
-LEFT JOIN team t
-    ON p.team_id = t.team_id
-WHERE p.name ILIKE '%Ad'  -- 把 'Ad' 換成使用者輸入的名字或關鍵字
-ORDER BY p.player_id;
-
-INSERT INTO followed_player (user_id, player_id)
-VALUES (1, 671936)
-ON CONFLICT (user_id, player_id) DO NOTHING;
-
