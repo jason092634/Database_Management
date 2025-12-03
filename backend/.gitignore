@@ -1,0 +1,10 @@
+# Python虛擬環境
+venv/
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# VSCode
+.vscode/
