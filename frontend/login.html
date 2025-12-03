@@ -19,9 +19,6 @@
     <p id="message"></p>
 
     <script>
-        // -----------------------------
-        // SHA-256 密碼雜湊（與 register.html 相同）
-        // -----------------------------
         async function hashPassword(password) {
             const encoder = new TextEncoder();
             const data = encoder.encode(password);
@@ -30,9 +27,6 @@
             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
-        // -----------------------------
-        // 登入函式
-        // -----------------------------
         async function login() {
             const username = document.getElementById("username").value;
             const password = document.getElementById("password").value;
@@ -45,7 +39,6 @@
             }
 
             try {
-                // ✔ 對密碼進行 SHA-256（與註冊一致）
                 const hashedPassword = await hashPassword(password);
 
                 const res = await fetch("http://127.0.0.1:5000/login", {
@@ -62,8 +55,7 @@
                     // 保存 user ID
                     localStorage.setItem("user_id", data.user_id);
 
-                    // ✔ 成功登入後跳轉至 team_search.html
-                    window.location.href = "team_search.html";
+                    window.location.href = "dashboard.html";
                 } else {
                     messageEl.innerHTML = "登入失敗：" + data.error;
                 }

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>球員查詢</title>
+</head>
+<body>
+    <h1>查詢球員資訊</h1>
+    <input type="text" id="playerInput" placeholder="輸入球員姓名">
+    <button onclick="searchPlayer()">查詢</button>
+    <button onclick="location.href='dashboard.html'">回主畫面</button>
+
+    <h2>結果：</h2>
+    <div id="result"></div>
+
+    <script>
+        async function searchPlayer() {
+            const name = document.getElementById("playerInput").value.trim();
+            const resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = "";
+
+            if (!name) {
+                resultDiv.innerHTML = "<p>請輸入球員姓名</p>";
+                return;
+            }
+
+            try {
+                const res = await fetch("http://127.0.0.1:5000/search/players", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    const players = data.result;
+
+                    if (!Array.isArray(players) || players.length === 0) {
+                        resultDiv.innerHTML = "<p>找不到符合的球員</p>";
+                        return;
+                    }
+
+                    players.forEach(p => {
+                        const div = document.createElement("div");
+                        div.innerHTML = `
+                            <strong>${p.player_name}</strong> (#${p.number})<br>
+                            狀態: ${p.status}<br>
+                            球隊: ${p.team_name} (教練: ${p.manager_name})<br>
+                            聯盟: ${p.league_name}
+                            <hr>
+                        `;
+                        resultDiv.appendChild(div);
+                    });
+
+                } else {
+                    resultDiv.innerHTML = "<p>查詢失敗：" + data.error + "</p>";
+                }
+
+            } catch (err) {
+                resultDiv.innerHTML = "<p>發生錯誤：" + err + "</p>";
+            }
+        }
+    </script>
+</body>
+</html>

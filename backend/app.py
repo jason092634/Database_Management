@@ -4,13 +4,16 @@ import psycopg2
 from config import DB_CONFIG
 from routes.team_routes import team_bp
 from routes.auth_routes import auth_bp
+from routes.player_routes import player_bp
+from routes.match_routes import match_bp
+
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../frontend")
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="/")
-CORS(app)  # 允許跨域請求
+CORS(app)
 
 def get_connection():
     return psycopg2.connect(**DB_CONFIG)
@@ -28,11 +31,31 @@ def register_page():
 def login_page():
     return send_from_directory(FRONTEND_DIR, "login.html")
 
+@app.route("/team_search")
+def team_search_page():
+    return send_from_directory(FRONTEND_DIR, "team_search.html")
+
+@app.route("/player_search")
+def player_search_page():
+    return send_from_directory(FRONTEND_DIR, "player_search.html")
+
+@app.route("/match_search")
+def match_search_page():
+    return send_from_directory(FRONTEND_DIR, "match_search.html")
+
 # 註冊/登入
 app.register_blueprint(auth_bp)
 
 # 查球隊
 app.register_blueprint(team_bp)
+
+# 查球員
+app.register_blueprint(player_bp)
+
+# 查比賽
+app.register_blueprint(match_bp)
+
+
 
 # 啟動 Flask
 if __name__ == "__main__":
