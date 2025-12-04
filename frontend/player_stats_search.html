@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>球員區間成績查詢</title>
+</head>
+<body>
+    <h1>球員區間成績查詢</h1>
+
+    <label>球員姓名：</label>
+    <input type="text" id="player_name" required>
+    <br><br>
+
+    <label>起始日期：</label>
+    <input type="date" id="start_date" required>
+    <br><br>
+
+    <label>結束日期：</label>
+    <input type="date" id="end_date" required>
+    <br><br>
+
+    <button onclick="searchStats()">查詢</button>
+    <button onclick="location.href='dashboard.html'">回主畫面</button>
+
+    <hr>
+
+    <div id="result"></div>
+
+    <br>
+
+<script>
+function searchStats() {
+    const name = document.getElementById("player_name").value.trim();
+    const start = document.getElementById("start_date").value;
+    const end = document.getElementById("end_date").value;
+
+    if (!name || !start || !end) {
+        alert("請輸入完整查詢資訊！");
+        return;
+    }
+
+    fetch("/search/player_stats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            player_name: name,
+            start_date: start,
+            end_date: end
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const resultDiv = document.getElementById("result");
+
+        if (!data.success) {
+            resultDiv.innerHTML = `<p style="color:red;">${data.error}</p>`;
+            return;
+        }
+
+        const r = data.result;
+
+        resultDiv.innerHTML = `
+            <h2>${r.player_name} 的區間成績</h2>
+
+            <h3>打擊成績</h3>
+            <p>打數：${r.total_at_bats}</p>
+            <p>打席：${r.total_plate_appearance}</p>
+            <p>安打：${r.total_hits}</p>
+            <p>二壘打：${r.total_doubles}</p>
+            <p>三壘打：${r.total_triples}</p>
+            <p>全壘打：${r.total_home_runs}</p>
+            <p>打點：${r.total_rbis}</p>
+            <p>得分：${r.total_runs}</p>
+            <p>三振：${r.total_batting_strikeouts}</p>
+            <p>四壞：${r.total_walks}</p>
+            <p>觸身球：${r.total_hbp}</p>
+            <p>盜壘：${r.total_stolen_bases}</p>
+            <p>盜壘失敗：${r.total_caught_stealing}</p>
+
+            <h3>投球成績</h3>
+            <p>投球局數：${r.total_innings_pitched}</p>
+            <p>用球數：${r.total_pitches}</p>
+            <p>面對打者：${r.total_batters_faced}</p>
+            <p>三振：${r.total_pitching_strikeouts}</p>
+            <p>四壞：${r.total_pitching_walks}</p>
+            <p>被安打：${r.total_hits_allowed}</p>
+            <p>被全壘打：${r.total_pitching_home_runs}</p>
+            <p>失分：${r.total_runs_allowed}</p>
+            <p>責失分：${r.total_earned_runs}</p>
+
+            <h3>守備</h3>
+            <p>守備機會：${r.total_fielding_chances}</p>
+            <p>刺殺：${r.total_putouts}</p>
+            <p>助殺：${r.total_assists}</p>
+            <p>失誤：${r.total_errors}</p>
+        `;
+    })
+    .catch(err => {
+        console.error(err);
+        alert("查詢時發生錯誤！");
+    });
+}
+</script>
+
+</body>
+</html>

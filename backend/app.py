@@ -6,6 +6,8 @@ from routes.team_routes import team_bp
 from routes.auth_routes import auth_bp
 from routes.player_routes import player_bp
 from routes.match_routes import match_bp
+from routes.player_stats_routes import playerstats_bp
+from routes.leaderboard_routes import leaderboard_bp
 
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
@@ -43,6 +45,14 @@ def player_search_page():
 def match_search_page():
     return send_from_directory(FRONTEND_DIR, "match_search.html")
 
+@app.route("/player_stats_search")
+def player_stats_search_page():
+    return send_from_directory(FRONTEND_DIR, "player_stats_search.html")
+
+@app.route("/leaderboard")
+def leaderboard_page():
+    return send_from_directory(FRONTEND_DIR, "leaderboard.html")
+
 # 註冊/登入
 app.register_blueprint(auth_bp)
 
@@ -55,7 +65,11 @@ app.register_blueprint(player_bp)
 # 查比賽
 app.register_blueprint(match_bp)
 
+# 查球員成績
+app.register_blueprint(playerstats_bp)
 
+# 查看排行榜
+app.register_blueprint(leaderboard_bp)
 
 # 啟動 Flask
 if __name__ == "__main__":
