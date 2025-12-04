@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>追蹤球員與球隊</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        h2 {
+            cursor: pointer;
+            background-color: #eee;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        table {
+            width: 90%;
+            border-collapse: collapse;
+            margin: 10px 0 20px 0;
+        }
+        th, td {
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #ddd;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .hidden {
+            display: none;
+        }
+        .switch-buttons {
+            margin-bottom: 20px;
+        }
+        .switch-buttons button {
+            padding: 8px 16px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        .search-area {
+            margin: 10px 0 20px 0;
+        }
+        .search-area input[type="text"] {
+            padding: 6px;
+            width: 250px;
+        }
+        .search-area button {
+            padding: 6px 12px;
+            margin-left: 6px;
+        }
+        .follow-btn {
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        .info-text {
+            color: #555;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>追蹤球員與球隊</h1>
+
+    <!-- 分頁切換按鈕 -->
+    <div class="switch-buttons">
+        <button onclick="showTab('player')">追蹤球員</button>
+        <button onclick="showTab('team')">追蹤球隊</button>
+        <button onclick="location.href='dashboard.html'">回主畫面</button>
+    </div>
+
+    <!-- ===== 球員追蹤分頁 ===== -->
+    <div id="player-tab">
+        <!-- 已追蹤球員 -->
+        <div class="section">
+            <h2 onclick="toggleSection('followed-players-section')">已追蹤球員列表 ▼</h2>
+            <div id="followed-players-section">
+                <p class="info-text">以下為目前帳號追蹤中的球員。</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>球員 ID</th>
+                            <th>姓名</th>
+                            <th>背號</th>
+                            <th>所屬球隊</th>
+                            <th>追蹤時間</th>
+                        </tr>
+                    </thead>
+                    <tbody id="followed-players-body">
+                        <!-- 用 JavaScript 動態填入 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 查詢並追蹤球員 -->
+        <div class="section">
+            <h2 onclick="toggleSection('search-player-section')">查詢球員並追蹤 ▼</h2>
+            <div id="search-player-section">
+                <div class="search-area">
+                    <input type="text" id="player-search-input" placeholder="輸入球員姓名關鍵字">
+                    <button onclick="searchPlayers()">查詢</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>球員 ID</th>
+                            <th>姓名</th>
+                            <th>背號</th>
+                            <th>狀態</th>
+                            <th>所屬球隊</th>
+                            <th>聯盟</th>
+                            <th>追蹤</th>
+                        </tr>
+                    </thead>
+                    <tbody id="search-players-body">
+                        <!-- 用 JavaScript 動態填入 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 球隊追蹤分頁 ===== -->
+    <div id="team-tab" class="hidden">
+        <!-- 已追蹤球隊 -->
+        <div class="section">
+            <h2 onclick="toggleSection('followed-teams-section')">已追蹤球隊列表 ▼</h2>
+            <div id="followed-teams-section">
+                <p class="info-text">以下為目前帳號追蹤中的球隊。</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>球隊 ID</th>
+                            <th>球隊名稱</th>
+                            <th>總教練</th>
+                            <th>追蹤時間</th>
+                        </tr>
+                    </thead>
+                    <tbody id="followed-teams-body">
+                        <!-- 用 JavaScript 動態填入 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 查詢並追蹤球隊 -->
+        <div class="section">
+            <h2 onclick="toggleSection('search-team-section')">查詢球隊並追蹤 ▼</h2>
+            <div id="search-team-section">
+                <div class="search-area">
+                    <input type="text" id="team-search-input" placeholder="輸入球隊名稱關鍵字">
+                    <button onclick="searchTeams()">查詢</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>球隊 ID</th>
+                            <th>球隊名稱</th>
+                            <th>總教練</th>
+                            <th>聯盟</th>
+                            <th>追蹤</th>
+                        </tr>
+                    </thead>
+                    <tbody id="search-teams-body">
+                        <!-- 用 JavaScript 動態填入 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        const BASE_URL = "http://127.0.0.1:5000";
+
+        // 展開/收起區塊
+        function toggleSection(id) {
+            const section = document.getElementById(id);
+            section.classList.toggle("hidden");
+        }
+
+        // 切換球員 / 球隊分頁
+        function showTab(type) {
+            const playerTab = document.getElementById("player-tab");
+            const teamTab = document.getElementById("team-tab");
+
+            if (type === "player") {
+                playerTab.classList.remove("hidden");
+                teamTab.classList.add("hidden");
+            } else {
+                playerTab.classList.add("hidden");
+                teamTab.classList.remove("hidden");
+            }
+        }
+
+        // =========================
+        // 追蹤球員相關
+        // =========================
+
+        async function searchPlayers() {
+            const name = document.getElementById("player-search-input").value.trim();
+            const tbody = document.getElementById("search-players-body");
+            tbody.innerHTML = "";
+
+            if (!name) {
+                tbody.innerHTML = `<tr><td colspan="7">請輸入球員姓名</td></tr>`;
+                return;
+            }
+
+            try {
+                const res = await fetch(`${BASE_URL}/search/players`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name })
+                });
+
+                const data = await res.json();
+
+                if (!data.success) {
+                    tbody.innerHTML = `<tr><td colspan="7">${data.error || "查詢失敗"}</td></tr>`;
+                    return;
+                }
+
+                if (data.result.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7">查無資料</td></tr>`;
+                    return;
+                }
+
+                data.result.forEach(p => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${p.player_id}</td>
+                        <td>${p.player_name}</td>
+                        <td>${p.number ?? ""}</td>
+                        <td>${p.status}</td>
+                        <td>${p.team_name}</td>
+                        <td>${p.league_name}</td>
+                        <td>
+                            <button class="follow-btn" onclick="followPlayer(${p.player_id})">
+                                追蹤
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="7">系統錯誤：${err}</td></tr>`;
+            }
+        }
+
+        async function followPlayer(playerId) {
+            try {
+                const res = await fetch(`${BASE_URL}/follow/player`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ player_id: playerId })
+                });
+                const data = await res.json();
+                alert(data.message || (data.success ? "成功追蹤球員" : "追蹤失敗"));
+
+                if (data.success) {
+                    loadFollowedPlayers();
+                }
+            } catch (err) {
+                console.error(err);
+                alert("追蹤失敗，請稍後再試");
+            }
+        }
+
+        async function loadFollowedPlayers() {
+            const tbody = document.getElementById("followed-players-body");
+            tbody.innerHTML = "";
+
+            try {
+                const res = await fetch(`${BASE_URL}/followed/players`);
+                const data = await res.json();
+
+                if (!data.success) {
+                    tbody.innerHTML = `<tr><td colspan="5">${data.error || "載入失敗"}</td></tr>`;
+                    return;
+                }
+
+                if (data.result.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5">目前尚未追蹤任何球員</td></tr>`;
+                    return;
+                }
+
+                data.result.forEach(p => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${p.player_id}</td>
+                        <td>${p.name}</td>
+                        <td>${p.number ?? ""}</td>
+                        <td>${p.team_name ?? ""}</td>
+                        <td>${p.follow_time}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="5">系統錯誤：${err}</td></tr>`;
+            }
+        }
+
+        // =========================
+        // 追蹤球隊相關
+        // =========================
+async function searchTeams() {
+    const name = document.getElementById("team-search-input").value.trim();
+    const tbody = document.getElementById("search-teams-body");
+    tbody.innerHTML = "";
+
+    if (!name) {
+        tbody.innerHTML = `<tr><td colspan="5">請輸入球隊名稱</td></tr>`;
+        return;
+    }
+
+    try {
+        const res = await fetch(`${BASE_URL}/search/teams`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name })
+        });
+
+        const data = await res.json();
+
+        if (!data.success) {
+            tbody.innerHTML = `<tr><td colspan="5">${data.error || "查詢失敗"}</td></tr>`;
+            return;
+        }
+
+        // ⚠ data.result 是一個物件：{ teamName: [players...] }
+        const teamsObj = data.result || {};
+        const teamNames = Object.keys(teamsObj);
+
+        if (teamNames.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5">查無資料</td></tr>`;
+            return;
+        }
+
+        teamNames.forEach(teamName => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><!-- team_id 無法從這個 API 拿，就先留空 --></td>
+                <td>${teamName}</td>
+                <td><!-- 總教練未知 --></td>
+                <td><!-- 聯盟未知 --></td>
+                <td>
+                    <button class="follow-btn" onclick="followTeam('${teamName.replace(/'/g, "\\'")}')">
+                        追蹤
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+        console.error(err);
+        tbody.innerHTML = `<tr><td colspan="5">系統錯誤：${err}</td></tr>`;
+    }
+}
+
+        // =========================
+        // 初始化：預設顯示球員分頁並載入追蹤列表
+        // =========================
+        showTab("player");
+        loadFollowedPlayers();
+        loadFollowedTeams();
+    </script>
+
+</body>
+</html>
