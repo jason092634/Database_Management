@@ -3,6 +3,7 @@ from flask_cors import CORS
 import psycopg2
 from config import DB_CONFIG
 from routes.team_routes import team_bp
+from routes.board_routes import ranking_bp
 
 app = Flask(__name__)
 CORS(app)  # 允許前端不同 port 請求
@@ -17,6 +18,7 @@ def test():
 
 # 新增的查球隊 + 球員 API
 app.register_blueprint(team_bp)
+app.register_blueprint(ranking_bp)
 
 if __name__ == "__main__":
     app.run(debug=True)
