@@ -3,6 +3,7 @@ from flask_cors import CORS
 import psycopg2
 from config import DB_CONFIG
 from routes.team_routes import team_bp
+from routes.board_routes import ranking_bp
 from routes.auth_routes import auth_bp
 from routes.player_routes import player_bp
 from routes.match_routes import match_bp
@@ -63,6 +64,7 @@ app.register_blueprint(auth_bp)
 
 # 查球隊
 app.register_blueprint(team_bp)
+app.register_blueprint(ranking_bp)
 
 # 查球員
 app.register_blueprint(player_bp)
