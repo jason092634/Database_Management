@@ -8,13 +8,14 @@
     <h1>查詢球隊</h1>
     <input type="text" id="teamInput" placeholder="輸入球隊名稱">
     <button onclick="searchTeam()">查詢</button>
+    <button onclick="location.href='dashboard.html'">回主畫面</button>
 
     <h2>結果：</h2>
     <div id="result"></div>
 
     <script>
         async function searchTeam() {
-            const name = document.getElementById("teamInput").value;
+            const name = document.getElementById("teamInput").value.trim();
             const resultDiv = document.getElementById("result");
             resultDiv.innerHTML = "";
 
@@ -34,26 +35,31 @@
 
                 if (data.success) {
                     const teams = data.result;
-                    if (Object.keys(teams).length === 0) {
+
+                    if (!teams || Object.keys(teams).length === 0) {
                         resultDiv.innerHTML = "<p>找不到符合的球隊</p>";
-                    } else {
-                        for (const [teamName, players] of Object.entries(teams)) {
-                            const teamSection = document.createElement("div");
-                            teamSection.innerHTML = `<h3>${teamName}</h3>`;
-                            if (players.length === 0) {
-                                teamSection.innerHTML += "<p>沒有球員</p>";
-                            } else {
-                                const ul = document.createElement("ul");
-                                players.forEach(p => {
-                                    const li = document.createElement("li");
-                                    li.textContent = `${p.player_id}：${p.player_name}`;
-                                    ul.appendChild(li);
-                                });
-                                teamSection.appendChild(ul);
-                            }
-                            resultDiv.appendChild(teamSection);
-                        }
+                        return;
                     }
+
+                    for (const [teamName, players] of Object.entries(teams)) {
+                        const teamSection = document.createElement("div");
+                        teamSection.innerHTML = `<h3>${teamName}</h3>`;
+
+                        if (!Array.isArray(players) || players.length === 0) {
+                            teamSection.innerHTML += "<p>沒有球員</p>";
+                        } else {
+                            const ul = document.createElement("ul");
+                            players.forEach(p => {
+                                const li = document.createElement("li");
+                                li.textContent = `${p.player_id}：${p.player_name}`;
+                                ul.appendChild(li);
+                            });
+                            teamSection.appendChild(ul);
+                        }
+
+                        resultDiv.appendChild(teamSection);
+                    }
+
                 } else {
                     resultDiv.innerHTML = "<p>查詢失敗：" + data.error + "</p>";
                 }
