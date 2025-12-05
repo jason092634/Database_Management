@@ -2,73 +2,68 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>打擊率排行榜</title>
+    <title>棒球排行榜</title>
 </head>
 <body>
-    <h1>2025 年打擊率排行榜（Top 5）</h1>
+    <h1>棒球排行榜</h1>
 
-    <h2>結果：</h2>
+    <label for="rankingType">選擇排行榜：</label>
+    <select id="rankingType" onchange="loadRanking()">
+        <option value="avg">打擊率 AVG</option>
+        <option value="era">防禦率 ERA</option>
+        <option value="hr">全壘打 HR</option>
+    </select>
+
+    <h2>排行結果：</h2>
     <div id="result"></div>
 
     <script>
         async function loadRanking() {
+            const type = document.getElementById("rankingType").value;
             const resultDiv = document.getElementById("result");
-            resultDiv.innerHTML = "<p>載入中...</p>";
+            resultDiv.innerHTML = "";
 
             try {
-                const res = await fetch("http://127.0.0.1:5000/ranking/avg", {
-                    method: "GET"
-                });
-
+                const res = await fetch(`http://127.0.0.1:5000/ranking/${type}`);
                 const data = await res.json();
 
-                if (data.success) {
-                    const list = data.result;
-
-                    if (list.length === 0) {
-                        resultDiv.innerHTML = "<p>沒有符合條件的球員</p>";
-                    } else {
-                        const table = document.createElement("table");
-                        table.border = "1";
-                        table.cellPadding = "8";
-
-                        table.innerHTML = `
-                            <tr>
-                                <th>名次</th>
-                                <th>球員</th>
-                                <th>球隊</th>
-                                <th>安打</th>
-                                <th>打數</th>
-                                <th>打擊率</th>
-                            </tr>
-                        `;
-
-                        list.forEach(row => {
-                            const tr = document.createElement("tr");
-                            tr.innerHTML = `
-                                <td>${row.rank}</td>
-                                <td>${row.player_name}</td>
-                                <td>${row.team_name}</td>
-                                <td>${row.total_hits}</td>
-                                <td>${row.total_at_bats}</td>
-                                <td>${row.avg}</td>
-                            `;
-                            table.appendChild(tr);
-                        });
-
-                        resultDiv.innerHTML = "";
-                        resultDiv.appendChild(table);
-                    }
-                } else {
+                if (!data.success) {
                     resultDiv.innerHTML = "<p>查詢失敗：" + data.error + "</p>";
+                    return;
                 }
+
+                const list = data.result;
+                if (list.length === 0) {
+                    resultDiv.innerHTML = "<p>查無資料</p>";
+                    return;
+                }
+
+                const ul = document.createElement("ul");
+                list.forEach(item => {
+                    const li = document.createElement("li");
+
+                    if (type === "avg") {
+                        li.textContent =
+                            `#${item.rank} ${item.player_name} (${item.team_name}) - AVG: ${item.avg}`;
+                    } else if (type === "era") {
+                        li.textContent =
+                            `#${item.rank} ${item.player_name} (${item.team_name}) - ERA: ${item.era}`;
+                    } else if (type === "hr") {
+                        li.textContent =
+                            `#${item.rank} ${item.player_name} (${item.team_name}) - HR: ${item.total_hr}`;
+                    }
+
+                    ul.appendChild(li);
+                });
+
+                resultDiv.appendChild(ul);
 
             } catch (err) {
                 resultDiv.innerHTML = "<p>發生錯誤：" + err + "</p>";
             }
         }
 
-        // 一打開網頁就載入排行榜
+        // 預設載入打擊率
         window.onload = loadRanking;
     </script>
 </body>
