@@ -180,3 +180,44 @@ def get_followed_teams():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+# ---------------------------
+# 5. 追蹤頁面用：查球隊基本資訊
+# ---------------------------
+@follow.route("/follow/search_teams", methods=["POST"])
+def follow_search_teams():
+    try:
+        data = request.json
+        keyword = data.get("name", "")
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT 
+                t.team_id,
+                t.team_name,
+                t.manager_name,
+                l.league_name
+            FROM Team t
+            LEFT JOIN League l ON t.league_id = l.league_id
+            WHERE t.team_name ILIKE %s
+            ORDER BY t.team_id
+        """, (f"%{keyword}%",))
+
+        rows = cur.fetchall()
+        conn.close()
+
+        result = [
+            {
+                "team_id": r[0],
+                "team_name": r[1],
+                "manager_name": r[2] or "Unknown",
+                "league_name": r[3] or "Unknown",
+            }
+            for r in rows
+        ]
+
+        return jsonify({"success": True, "result": result})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
