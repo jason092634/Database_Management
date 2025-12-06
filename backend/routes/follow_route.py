@@ -14,8 +14,7 @@ def follow_player():
     try:
         data = request.json
         player_id = data.get("player_id")
-        # 預設假user_id為1
-        user_id = session.get("user_id", 1)
+        user_id = get_current_user_id() 
 
         if not player_id:
             return jsonify({"success": False, "error": "缺少 player_id"})
@@ -55,7 +54,7 @@ def follow_team():
         team_id = data.get("team_id")
         team_name = data.get("team_name")  # ⭐ 新增：允許前端給球隊名稱
 
-        user_id = session.get("user_id", 1)
+        user_id = get_current_user_id() 
 
         if not team_id and not team_name:
             return jsonify({"success": False, "error": "缺少 team_id 或 team_name"})
@@ -104,7 +103,7 @@ def follow_team():
 @follow.route("/followed/players", methods=["GET"])
 def get_followed_players():
     try:
-        user_id = session.get("user_id", 1)
+        user_id = get_current_user_id()
 
         conn = get_connection()
         cur = conn.cursor()
@@ -146,7 +145,7 @@ def get_followed_players():
 @follow.route("/followed/teams", methods=["GET"])
 def get_followed_teams():
     try:
-        user_id = session.get("user_id", 1)
+        user_id = get_current_user_id()
 
         conn = get_connection()
         cur = conn.cursor()
@@ -221,3 +220,24 @@ def follow_search_teams():
         return jsonify({"success": True, "result": result})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+    
+def get_current_user_id():
+    # 1. 先從 URL query 拿 ?user_id=3
+    uid = request.args.get("user_id")
+    if uid:
+        try:
+            return int(uid)
+        except ValueError:
+            pass
+
+    # 2. 再從 JSON body 拿 {"user_id": 3}
+    data = request.get_json(silent=True) or {}
+    uid = data.get("user_id")
+    if uid is not None:
+        try:
+            return int(uid)
+        except ValueError:
+            pass
+
+    # 3. 預設：先給 1，之後你可以改成回傳錯誤
+    return 1

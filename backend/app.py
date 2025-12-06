@@ -20,6 +20,7 @@ FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../fron
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="/")
 CORS(app)
+app.secret_key = "DBgroup15"
 
 # Redis 連線
 redis_client = redis.Redis(**REDIS_CONFIG, decode_responses=True)
