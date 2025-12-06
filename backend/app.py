@@ -1,7 +1,7 @@
 from flask import Flask, send_from_directory, request, jsonify
 from flask_cors import CORS
 import psycopg2
-from config import DB_CONFIG
+from config import DB_CONFIG, REDIS_CONFIG
 from routes.team_routes import team_bp
 from routes.stat_board_routes import ranking_bp
 from routes.auth_routes import auth_bp
@@ -22,11 +22,7 @@ app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="/")
 CORS(app)
 
 # Redis 連線
-redis_client = redis.Redis(
-    host="localhost",
-    port=6379,
-    decode_responses=True  # 讓回傳字串不要是 bytes
-)
+redis_client = redis.Redis(**REDIS_CONFIG, decode_responses=True)
 app.redis = redis_client
 
 def get_connection():

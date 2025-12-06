@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 import psycopg2
-from config import DB_CONFIG
+from config import DB_CONFIG, REDIS_CONFIG
 
 searchboard_bp = Blueprint("searchboard", __name__)
 

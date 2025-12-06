@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 import psycopg2
-from config import DB_CONFIG
+from config import DB_CONFIG, REDIS_CONFIG
 
 player_bp = Blueprint("player_bp", __name__)
 

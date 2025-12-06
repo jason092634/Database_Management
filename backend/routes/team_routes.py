@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, current_app
-from config import DB_CONFIG
+from config import DB_CONFIG, REDIS_CONFIG
 import psycopg2
 
 team_bp = Blueprint('team_bp', __name__)
