@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>搜尋次數排行榜</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background: #fafafa;
+        }
+        .ranking-section {
+            margin-top: 30px;
+        }
+        h2 {
+            margin-bottom: 20px;
+        }
+        table {
+            background: white;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <h1 class="mt-4 fw-bold text-center">📊 搜尋次數排行榜</h1>
+    <p class="text-center text-muted">顯示球員、球隊、比賽被查詢的熱門程度</p>
+
+    <!-- Player Ranking -->
+    <div class="ranking-section">
+        <h2>🏅 球員查詢排行榜</h2>
+        <table class="table table-striped" id="player-table">
+            <thead>
+                <tr>
+                    <th>排名</th>
+                    <th>球員 ID</th>
+                    <th>查詢次數</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Team Ranking -->
+    <div class="ranking-section">
+        <h2>🏆 球隊查詢排行榜</h2>
+        <table class="table table-striped" id="team-table">
+            <thead>
+                <tr>
+                    <th>排名</th>
+                    <th>球隊 ID</th>
+                    <th>查詢次數</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Match Ranking -->
+    <div class="ranking-section">
+        <h2>⚾ 比賽查詢排行榜</h2>
+        <table class="table table-striped" id="match-table">
+            <thead>
+                <tr>
+                    <th>排名</th>
+                    <th>比賽 ID</th>
+                    <th>查詢次數</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    // --------------------------
+    //  封裝 API 呼叫
+    // --------------------------
+    async function loadRanking(type, tableId) {
+        const res = await fetch(`/api/ranking/${type}?top=10`);
+        const json = await res.json();
+        const data = json.data;
+
+        const tbody = document.querySelector(`#${tableId} tbody`);
+        tbody.innerHTML = "";
+
+        data.forEach((item, index) => {
+            const key = Object.keys(item)[0];   // player_id / team_id / match_id
+            const count = item.count;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item[key]}</td>
+                    <td>${count}</td>
+                </tr>
+            `;
+        });
+    }
+
+    // --------------------------
+    //  頁面載入自動抓資料
+    // --------------------------
+    window.onload = () => {
+        loadRanking("players", "player-table");
+        loadRanking("teams", "team-table");
+        loadRanking("matches", "match-table");
+    };
+</script>
+
+</body>
+</html>

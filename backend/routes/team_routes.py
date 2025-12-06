@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 from config import DB_CONFIG
 import psycopg2
 
@@ -10,7 +10,7 @@ def get_connection():
 @team_bp.route("/search/teams", methods=["POST"])
 def search_teams():
     data = request.json
-    keyword = data.get("name", "")
+    keyword = data.get("name", "").strip()
 
     try:
         conn = get_connection()
@@ -26,6 +26,10 @@ def search_teams():
         cur.execute(query, (f"%{keyword}%",))
         rows = cur.fetchall()
         conn.close()
+
+        # Redis increment
+        if keyword:
+            current_app.redis.zincrby("team_query_count", 1, f"team:{keyword}")
 
         result = {}
         for team_id, team_name, player_id, player_name in rows:
