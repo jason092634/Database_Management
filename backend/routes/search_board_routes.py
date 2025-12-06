@@ -32,7 +32,7 @@ def get_ranking(category):
     # --------------------------
     # 連 DB 取得名稱
     # --------------------------
-    id_list = [member for member, score in data]
+    id_list = [int(member) for member, score in data]
 
     try:
         conn = get_connection()
