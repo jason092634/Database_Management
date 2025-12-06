@@ -91,6 +91,7 @@
                             <th>背號</th>
                             <th>所屬球隊</th>
                             <th>追蹤時間</th>
+                            <th>操作</th>
                         </tr>
                     </thead>
                     <tbody id="followed-players-body">
@@ -142,6 +143,8 @@
                             <th>球隊名稱</th>
                             <th>總教練</th>
                             <th>追蹤時間</th>
+                            <th>操作</th>
+                            
                         </tr>
                     </thead>
                     <tbody id="followed-teams-body">
@@ -220,11 +223,12 @@
             }
 
             try {
-                const res = await fetch(`${BASE_URL}/search/players`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name })
-                });
+                const res = await fetch(`${BASE_URL}/follow/search_players`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name })
+});
+
 
                 const data = await res.json();
 
@@ -284,42 +288,50 @@
             }
         }
 
-        async function loadFollowedPlayers() {
-            const tbody = document.getElementById("followed-players-body");
-            tbody.innerHTML = "";
+    async function loadFollowedPlayers() {
+    const tbody = document.getElementById("followed-players-body");
+    tbody.innerHTML = "";
 
-            try {
-                const res = await fetch(`${BASE_URL}/followed/players?user_id=${currentUserId}`);
+    try {
+        const res = await fetch(`${BASE_URL}/followed/players?user_id=${currentUserId}`);
+        const data = await res.json();
 
-                const data = await res.json();
-
-                if (!data.success) {
-                    tbody.innerHTML = `<tr><td colspan="5">${data.error || "載入失敗"}</td></tr>`;
-                    return;
-                }
-
-                if (data.result.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5">目前尚未追蹤任何球員</td></tr>`;
-                    return;
-                }
-
-                data.result.forEach(p => {
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
-                        <td>${p.player_id}</td>
-                        <td>${p.name}</td>
-                        <td>${p.number ?? ""}</td>
-                        <td>${p.team_name ?? ""}</td>
-                        <td>${p.follow_time}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-
-            } catch (err) {
-                console.error(err);
-                tbody.innerHTML = `<tr><td colspan="5">系統錯誤：${err}</td></tr>`;
-            }
+        if (!data.success) {
+            tbody.innerHTML = `<tr><td colspan="6" class="empty-row">${data.error || "載入失敗"}</td></tr>`;
+            return;
         }
+
+        if (data.result.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty-row">目前尚未追蹤任何球員</td>
+                </tr>`;
+            return;
+        }
+
+        data.result.forEach(p => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${p.player_id}</td>
+                <td>${p.name}</td>
+                <td>${p.number ?? ""}</td>
+                <td>${p.team_name ?? ""}</td>
+                <td>${p.follow_time}</td>
+                <td>
+                    <button class="follow-btn" onclick="unfollowPlayer(${p.player_id})">
+                        取消追蹤
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+        console.error(err);
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-row">系統錯誤：${err}</td></tr>`;
+    }
+}
+
 
         // 追蹤球隊相關
         async function searchTeams() {
@@ -399,39 +411,95 @@
         }
 
         async function loadFollowedTeams() {
-            const tbody = document.getElementById("followed-teams-body");
-            tbody.innerHTML = "";
+    const tbody = document.getElementById("followed-teams-body");
+    tbody.innerHTML = "";
 
-            try {
-                const res = await fetch(`${BASE_URL}/followed/teams?user_id=${currentUserId}`);
-                const data = await res.json();
+    try {
+        const res = await fetch(`${BASE_URL}/followed/teams?user_id=${currentUserId}`);
+        const data = await res.json();
 
-                if (!data.success) {
-                    tbody.innerHTML = `<tr><td colspan="4">${data.error || "載入失敗"}</td></tr>`;
-                    return;
-                }
-
-                if (data.result.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4">目前尚未追蹤任何球隊</td></tr>`;
-                    return;
-                }
-
-                data.result.forEach(t => {
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
-                        <td>${t.team_id}</td>
-                        <td>${t.team_name}</td>
-                        <td>${t.manager_name}</td>
-                        <td>${t.follow_time}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-
-            } catch (err) {
-                console.error(err);
-                tbody.innerHTML = `<tr><td colspan="4">系統錯誤：${err}</td></tr>`;
-            }
+        if (!data.success) {
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-row">${data.error || "載入失敗"}</td></tr>`;
+            return;
         }
+
+        if (data.result.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="empty-row">目前尚未追蹤任何球隊</td>
+                </tr>`;
+            return;
+        }
+
+        data.result.forEach(t => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${t.team_id}</td>
+                <td>${t.team_name}</td>
+                <td>${t.manager_name}</td>
+                <td>${t.follow_time}</td>
+                <td>
+                    <button class="follow-btn" onclick="unfollowTeam(${t.team_id})">
+                        取消追蹤
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+        console.error(err);
+        tbody.innerHTML = `<tr><td colspan="5" class="empty-row">系統錯誤：${err}</td></tr>`;
+    }
+}
+
+
+        async function unfollowPlayer(playerId) {
+    try {
+        const res = await fetch(`${BASE_URL}/unfollow/player`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                player_id: playerId,
+                user_id: currentUserId  // 雖然後端會自己抓，但傳一下也沒差
+            })
+        });
+
+        const data = await res.json();
+        alert(data.message || (data.success ? "已取消追蹤球員" : "取消追蹤失敗"));
+
+        if (data.success) {
+            loadFollowedPlayers();   // 重新載入列表
+        }
+    } catch (err) {
+        console.error(err);
+        alert("取消追蹤失敗，請稍後再試");
+    }
+}
+
+async function unfollowTeam(teamId) {
+    try {
+        const res = await fetch(`${BASE_URL}/unfollow/team`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                team_id: teamId,
+                user_id: currentUserId
+            })
+        });
+
+        const data = await res.json();
+        alert(data.message || (data.success ? "已取消追蹤球隊" : "取消追蹤失敗"));
+
+        if (data.success) {
+            loadFollowedTeams();
+        }
+    } catch (err) {
+        console.error(err);
+        alert("取消追蹤失敗，請稍後再試");
+    }
+}
+
 
         // 初始化：預設顯示球員分頁並載入追蹤列表
         showTab("player");

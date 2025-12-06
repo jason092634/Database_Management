@@ -7,6 +7,30 @@ follow = Blueprint("follow", __name__)
 def get_connection():
     return psycopg2.connect(**DB_CONFIG)
 
+def get_current_user_id():
+    """
+    取得目前 user_id：
+    1. 先看 URL query: /xxx?user_id=3
+    2. 再看 JSON body: {"user_id": 3}
+    3. 都沒有就先預設 1（方便除錯）
+    """
+    uid = request.args.get("user_id")
+    if uid:
+        try:
+            return int(uid)
+        except ValueError:
+            pass
+
+    data = request.get_json(silent=True) or {}
+    uid = data.get("user_id")
+    if uid is not None:
+        try:
+            return int(uid)
+        except ValueError:
+            pass
+
+    return 1
+
 
 # 1. 追蹤球員
 @follow.route("/follow/player", methods=["POST"])
@@ -14,7 +38,7 @@ def follow_player():
     try:
         data = request.json
         player_id = data.get("player_id")
-        user_id = get_current_user_id() 
+        user_id = get_current_user_id()
 
         if not player_id:
             return jsonify({"success": False, "error": "缺少 player_id"})
@@ -46,15 +70,16 @@ def follow_player():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
+
 # 2. 追蹤球隊
 @follow.route("/follow/team", methods=["POST"])
 def follow_team():
     try:
         data = request.json
         team_id = data.get("team_id")
-        team_name = data.get("team_name")  # ⭐ 新增：允許前端給球隊名稱
+        team_name = data.get("team_name")
 
-        user_id = get_current_user_id() 
+        user_id = get_current_user_id()
 
         if not team_id and not team_name:
             return jsonify({"success": False, "error": "缺少 team_id 或 team_name"})
@@ -127,11 +152,11 @@ def get_followed_players():
 
         result = [
             {
-                "player_id": r[0],
-                "name": r[1],
-                "number": r[2],
-                "team_name": r[3],
-                "follow_time": r[4]
+                "player_id":  r[0],
+                "name":       r[1],
+                "number":     r[2],
+                "team_name":  r[3],
+                "follow_time": r[4],
             }
             for r in rows
         ]
@@ -140,6 +165,7 @@ def get_followed_players():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
 
 # 4. 取得追蹤球隊列表
 @follow.route("/followed/teams", methods=["GET"])
@@ -167,10 +193,10 @@ def get_followed_teams():
 
         result = [
             {
-                "team_id": r[0],
-                "team_name": r[1],
+                "team_id":      r[0],
+                "team_name":    r[1],
                 "manager_name": r[2],
-                "follow_time": r[3]
+                "follow_time":  r[3],
             }
             for r in rows
         ]
@@ -180,9 +206,8 @@ def get_followed_teams():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
-# ---------------------------
+
 # 5. 追蹤頁面用：查球隊基本資訊
-# ---------------------------
 @follow.route("/follow/search_teams", methods=["POST"])
 def follow_search_teams():
     try:
@@ -209,10 +234,10 @@ def follow_search_teams():
 
         result = [
             {
-                "team_id": r[0],
-                "team_name": r[1],
+                "team_id":      r[0],
+                "team_name":    r[1],
                 "manager_name": r[2] or "Unknown",
-                "league_name": r[3] or "Unknown",
+                "league_name":  r[3] or "Unknown",
             }
             for r in rows
         ]
@@ -220,24 +245,114 @@ def follow_search_teams():
         return jsonify({"success": True, "result": result})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+
+# 6. 追蹤頁面用：查球員基本資訊
+@follow.route("/follow/search_players", methods=["POST"])
+def follow_search_players():
+    try:
+        data = request.json
+        name_input = data.get("name", "").strip()
+
+        if not name_input:
+            return jsonify({"success": False, "error": "請輸入球員名稱"})
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT
+                p.player_id,              -- r[0]
+                p.name AS player_name,    -- r[1]
+                p.number,                 -- r[2]
+                p.status,                 -- r[3]
+                t.team_name,              -- r[4]
+                t.manager_name,           -- r[5]
+                l.league_name             -- r[6]
+            FROM player p
+            LEFT JOIN team t ON p.team_id = t.team_id
+            LEFT JOIN league l ON t.league_id = l.league_id
+            WHERE p.name ILIKE %s
+        """, (f"%{name_input}%",))
+
+        rows = cur.fetchall()
+        conn.close()
+
+        players = [
+            {
+                "player_id":   r[0],
+                "player_name": r[1],
+                "number":      r[2],
+                "status":      r[3],
+                "team_name":   r[4] or "Unknown",
+                "league_name": r[6] or "Unknown",   
+            }
+            for r in rows
+        ]
+
+        return jsonify({"success": True, "result": players})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
     
-def get_current_user_id():
-    # 1. 先從 URL query 拿 ?user_id=3
-    uid = request.args.get("user_id")
-    if uid:
-        try:
-            return int(uid)
-        except ValueError:
-            pass
+# 取消追蹤球員
+@follow.route("/unfollow/player", methods=["POST"])
+def unfollow_player():
+    try:
+        data = request.json or {}
+        player_id = data.get("player_id")
+        user_id = get_current_user_id()
 
-    # 2. 再從 JSON body 拿 {"user_id": 3}
-    data = request.get_json(silent=True) or {}
-    uid = data.get("user_id")
-    if uid is not None:
-        try:
-            return int(uid)
-        except ValueError:
-            pass
+        if not player_id:
+            return jsonify({"success": False, "error": "缺少 player_id"})
 
-    # 3. 預設：先給 1，之後你可以改成回傳錯誤
-    return 1
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            DELETE FROM Followed_player
+            WHERE user_id = %s AND player_id = %s
+        """, (user_id, player_id))
+
+        deleted = cur.rowcount
+        conn.commit()
+        conn.close()
+
+        if deleted == 0:
+            return jsonify({"success": False, "message": "本來就沒有追蹤這個球員"})
+        else:
+            return jsonify({"success": True, "message": "已取消追蹤球員"})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+# 取消追蹤球隊
+@follow.route("/unfollow/team", methods=["POST"])
+def unfollow_team():
+    try:
+        data = request.json or {}
+        team_id = data.get("team_id")
+        user_id = get_current_user_id()
+
+        if not team_id:
+            return jsonify({"success": False, "error": "缺少 team_id"})
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            DELETE FROM Followed_team
+            WHERE user_id = %s AND team_id = %s
+        """, (user_id, team_id))
+
+        deleted = cur.rowcount
+        conn.commit()
+        conn.close()
+
+        if deleted == 0:
+            return jsonify({"success": False, "message": "本來就沒有追蹤這個球隊"})
+        else:
+            return jsonify({"success": True, "message": "已取消追蹤球隊"})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
