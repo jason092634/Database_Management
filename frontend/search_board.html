@@ -17,6 +17,14 @@
         table {
             background: white;
         }
+        .tabs {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .tabs button {
+            padding: 8px 16px;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -32,7 +40,7 @@
             <thead>
                 <tr>
                     <th>排名</th>
-                    <th>球員 ID</th>
+                    <th>球員名稱</th>
                     <th>查詢次數</th>
                 </tr>
             </thead>
@@ -47,7 +55,7 @@
             <thead>
                 <tr>
                     <th>排名</th>
-                    <th>球隊 ID</th>
+                    <th>球隊名稱</th>
                     <th>查詢次數</th>
                 </tr>
             </thead>
@@ -62,7 +70,7 @@
             <thead>
                 <tr>
                     <th>排名</th>
-                    <th>比賽 ID</th>
+                    <th>比賽名稱</th>
                     <th>查詢次數</th>
                 </tr>
             </thead>
@@ -72,30 +80,35 @@
 
 </div>
 
+<div class="tabs">
+    <button onclick="location.href='dashboard.html'">回主畫面</button>
+</div>
+
 <script>
     // --------------------------
-    //  封裝 API 呼叫
+    //  封裝 API 呼叫排行榜
     // --------------------------
     async function loadRanking(type, tableId) {
-        const res = await fetch(`/api/ranking/${type}?top=10`);
-        const json = await res.json();
-        const data = json.data;
+        try {
+            const res = await fetch(`/api/ranking/${type}?top=10`);
+            const json = await res.json();
+            const data = json.data || [];
 
-        const tbody = document.querySelector(`#${tableId} tbody`);
-        tbody.innerHTML = "";
+            const tbody = document.querySelector(`#${tableId} tbody`);
+            tbody.innerHTML = "";
 
-        data.forEach((item, index) => {
-            const key = Object.keys(item)[0];   // player_id / team_id / match_id
-            const count = item.count;
-
-            tbody.innerHTML += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item[key]}</td>
-                    <td>${count}</td>
-                </tr>
-            `;
-        });
+            data.forEach((item, index) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${item.name}</td>
+                        <td>${item.count}</td>
+                    </tr>
+                `;
+            });
+        } catch (e) {
+            console.error("載入排行榜失敗:", e);
+        }
     }
 
     // --------------------------

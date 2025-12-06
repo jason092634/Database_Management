@@ -52,8 +52,10 @@ def search_matches():
         rows = cur.fetchall()
         conn.close()
 
-        # Redis increment (count search by date)
-        current_app.redis.zincrby("match_query_count", 1, f"match_date:{date}")
+        # Redis increment using match_id
+        for row in rows:
+            match_id = str(row[0])
+            current_app.redis.zincrby("ranking:match", 1, match_id)
 
         result = []
         for row in rows:

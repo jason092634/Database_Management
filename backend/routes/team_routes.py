@@ -27,9 +27,13 @@ def search_teams():
         rows = cur.fetchall()
         conn.close()
 
-        # Redis increment
-        if keyword:
-            current_app.redis.zincrby("team_query_count", 1, f"team:{keyword}")
+        # Redis increment using team_id
+        team_ids = set()
+        for row in rows:
+            team_id = str(row[0])
+            if team_id not in team_ids:
+                current_app.redis.zincrby("ranking:team", 1, team_id)
+                team_ids.add(team_id)
 
         result = {}
         for team_id, team_name, player_id, player_name in rows:

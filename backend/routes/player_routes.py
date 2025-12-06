@@ -35,8 +35,10 @@ def search_players():
         rows = cur.fetchall()
         conn.close()
 
-        # Redis increment
-        current_app.redis.zincrby("player_query_count", 1, f"player:{name_input}")
+        # Redis increment using player_id
+        for r in rows:
+            player_id = str(r[0])
+            current_app.redis.zincrby("ranking:player", 1, player_id)
 
         players = [
             {

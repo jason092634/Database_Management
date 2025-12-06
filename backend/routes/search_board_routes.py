@@ -1,118 +1,118 @@
-from flask import Blueprint, request, jsonify
-import redis
-
-# ---------------------------
-#  Redis 連線設定
-# ---------------------------
-r = redis.Redis(
-    host='localhost',
-    port=6379,
-    db=0,
-    decode_responses=True      # 讓回傳字串自動變為 str
-)
+from flask import Blueprint, request, jsonify, current_app
+import psycopg2
+from config import DB_CONFIG
 
 searchboard_bp = Blueprint("searchboard", __name__)
 
-# ===========================
-#  📌 1. 通用：更新查詢次數
-# ===========================
-@searchboard_bp.route("/api/query-log", methods=["POST"])
-def update_query_count():
-    data = request.get_json()
+def get_connection():
+    return psycopg2.connect(**DB_CONFIG)
 
-    if "type" not in data or "id" not in data:
-        return jsonify({"error": "Missing 'type' or 'id'"}), 400
-
-    query_type = data["type"]
-    item_id = data["id"]
-
-    redis_key = f"ranking:{query_type}"
-
-    if query_type not in ["player", "team", "match"]:
-        return jsonify({"error": "Invalid type. Must be player/team/match"}), 400
-
-    r.zincrby(redis_key, 1, item_id)
-
-    return jsonify({
-        "message": "Query count updated",
-        "type": query_type,
-        "id": item_id
-    }), 200
-
-
-# ===========================
-#  📌 2. 取得排行榜 Top-K
-# ===========================
+# ------------------------------------
+# 取得排行榜（包含名稱）
+# ------------------------------------
 @searchboard_bp.route("/api/ranking/<category>", methods=["GET"])
 def get_ranking(category):
     if category not in ["players", "teams", "matches"]:
         return jsonify({"error": "Category must be players/teams/matches"}), 400
 
-    # 前端用複數，Redis key 用單數
-    key_map = {
-        "players": "player",
-        "teams": "team",
-        "matches": "match"
+    redis_key_map = {
+        "players": "ranking:player",
+        "teams": "ranking:team",
+        "matches": "ranking:match"
     }
-
-    redis_key = f"ranking:{key_map[category]}"
+    redis_key = redis_key_map[category]
 
     top = request.args.get("top", default=10, type=int)
+    # 取出 Redis 排行榜
+    data = current_app.redis.zrevrange(redis_key, 0, top - 1, withscores=True)
 
-    data = r.zrevrange(redis_key, 0, top - 1, withscores=True)
+    if not data:
+        return jsonify({"type": category, "top": top, "data": []}), 200
 
-    # 格式化
-    formatted = []
-    for member, score in data:
-        formatted.append({
-            key_map[category] + "_id": member,
-            "count": int(score)
-        })
+    # --------------------------
+    # 連 DB 取得名稱
+    # --------------------------
+    id_list = [member for member, score in data]
 
-    return jsonify({
-        "type": key_map[category],
-        "top": top,
-        "data": formatted
-    }), 200
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        result = []
+        if category == "players":
+            cur.execute(
+                "SELECT player_id, name FROM player WHERE player_id = ANY(%s)",
+                (id_list,)
+            )
+            id_name_map = {str(pid): name for pid, name in cur.fetchall()}
+
+            for member, score in data:
+                result.append({
+                    "player_id": member,
+                    "name": id_name_map.get(member, member),
+                    "count": int(score)
+                })
+
+        elif category == "teams":
+            cur.execute(
+                "SELECT team_id, team_name FROM team WHERE team_id = ANY(%s)",
+                (id_list,)
+            )
+            id_name_map = {str(tid): name for tid, name in cur.fetchall()}
+
+            for member, score in data:
+                result.append({
+                    "team_id": member,
+                    "name": id_name_map.get(member, member),
+                    "count": int(score)
+                })
+
+        elif category == "matches":
+            # 可以用 home vs away 當名稱
+            cur.execute(
+                """
+                SELECT m.match_id, ht.team_name, at.team_name
+                FROM match m
+                JOIN team ht ON m.home_team_id = ht.team_id
+                JOIN team at ON m.away_team_id = at.team_id
+                WHERE m.match_id = ANY(%s)
+                """,
+                (id_list,)
+            )
+            id_name_map = {str(mid): f"{home} vs {away}" for mid, home, away in cur.fetchall()}
+
+            for member, score in data:
+                result.append({
+                    "match_id": member,
+                    "name": id_name_map.get(member, member),
+                    "count": int(score)
+                })
+
+        conn.close()
+        return jsonify({
+            "type": category,
+            "top": top,
+            "data": result
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
-# ===========================
-#  📌 3. 查詢某個 ID 的查詢次數
-# ===========================
-@searchboard_bp.route("/api/ranking/count", methods=["GET"])
-def get_single_count():
-    query_type = request.args.get("type")
-    item_id = request.args.get("id")
-
-    if query_type not in ["player", "team", "match"]:
-        return jsonify({"error": "Invalid type"}), 400
-
-    if item_id is None:
-        return jsonify({"error": "Missing id"}), 400
-
-    redis_key = f"ranking:{query_type}"
-
-    score = r.zscore(redis_key, item_id)
-    score = int(score) if score is not None else 0
-
-    return jsonify({
-        "type": query_type,
-        "id": item_id,
-        "count": score
-    })
-
-
-# ===========================
-#  📌 4. 清空排行榜
-# ===========================
+# ------------------------------------
+# 清空排行榜
+# ------------------------------------
 @searchboard_bp.route("/api/ranking/<category>", methods=["DELETE"])
 def clear_ranking(category):
-    if category not in ["player", "team", "match"]:
+    if category not in ["players", "teams", "matches"]:
         return jsonify({"error": "Invalid category"}), 400
 
-    redis_key = f"ranking:{category}"
-    r.delete(redis_key)
+    redis_key_map = {
+        "players": "ranking:player",
+        "teams": "ranking:team",
+        "matches": "ranking:match"
+    }
+    redis_key = redis_key_map[category]
 
-    return jsonify({
-        "message": f"{category} ranking cleared"
-    }), 200
+    current_app.redis.delete(redis_key)
+    return jsonify({"message": f"{category} ranking cleared"}), 200
