@@ -10,6 +10,7 @@ from routes.match_routes import match_bp
 from routes.player_stats_routes import playerstats_bp
 from routes.leaderboard_routes import leaderboard_bp
 from routes.follow_route import follow
+from routes.search_board_routes import searchboard_bp
 
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
@@ -90,6 +91,7 @@ app.register_blueprint(leaderboard_bp)
 # 追蹤球隊/球員
 app.register_blueprint(follow)
 
+app.register_blueprint(searchboard_bp)
 
 # 啟動 Flask
 if __name__ == "__main__":
