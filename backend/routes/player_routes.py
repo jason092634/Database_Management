@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 import psycopg2
 from config import DB_CONFIG
 
@@ -34,6 +34,9 @@ def search_players():
         """, (f"%{name_input}%",))
         rows = cur.fetchall()
         conn.close()
+
+        # Redis increment
+        current_app.redis.zincrby("player_query_count", 1, f"player:{name_input}")
 
         players = [
             {

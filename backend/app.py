@@ -13,11 +13,20 @@ from routes.follow_route import follow
 
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
+import redis
 
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../frontend")
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="/")
 CORS(app)
+
+# Redis 連線
+redis_client = redis.Redis(
+    host="localhost",
+    port=6379,
+    decode_responses=True  # 讓回傳字串不要是 bytes
+)
+app.redis = redis_client
 
 def get_connection():
     return psycopg2.connect(**DB_CONFIG)

@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from config import DB_CONFIG
 import psycopg2
 
@@ -51,6 +51,9 @@ def search_matches():
         cur.execute(query, params)
         rows = cur.fetchall()
         conn.close()
+
+        # Redis increment (count search by date)
+        current_app.redis.zincrby("match_query_count", 1, f"match_date:{date}")
 
         result = []
         for row in rows:
