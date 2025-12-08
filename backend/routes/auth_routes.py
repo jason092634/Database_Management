@@ -1,11 +1,9 @@
 import psycopg2
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-from config import DB_CONFIG
+from config import DB_CONFIG, ADMIN_SECRET_KEY
 
 auth_bp = Blueprint("auth_bp", __name__)
-
-ADMIN_SECRET_KEY = "YOUR_ADMIN_SECRET_KEY"  # 請安全存放
 
 def get_connection():
     return psycopg2.connect(**DB_CONFIG)
@@ -65,7 +63,7 @@ def register():
 def login_api():
     data = request.json
     username = data.get("username")
-    password = data.get("password")  # 前端已 SHA-256 hash
+    password = data.get("password")
 
     if not username or not password:
         return jsonify({"success": False, "error": "欄位不可為空"})
@@ -87,7 +85,6 @@ def login_api():
 
         user_id, hashed_password, role = user
 
-        # 前端已 hash，直接比對字串
         if password != hashed_password:
             return jsonify({"success": False, "error": "密碼錯誤"})
 
@@ -99,35 +96,3 @@ def login_api():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
-
-'''
-# 登入路由
-@auth_bp.route('/login', methods=['POST'])
-def login():
-    db = DB_manager()
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    admin_code = data.get('adminCode')
-
-    if not username or not password:
-        return jsonify({"message": "缺少帳號或密碼"}), 400
-
-    # 使用明文密碼檢查用戶
-    user = db.check_user(username, password) 
-
-    if not user:
-        return jsonify({"message": "帳號或密碼錯誤"}), 401
-
-    # 檢查管理員碼 (如果提供了)
-    is_admin = False
-    if admin_code:
-        is_admin = db.check_admin_code(admin_code)
-        if not is_admin:
-            # 即使普通用戶驗證成功，但管理員碼錯誤，也認為是登入失敗
-            return jsonify({"message": "管理員碼錯誤"}), 401 
-            
-    # 返回用戶信息
-    user_info = {"id": user[0], "username": user[1], "isAdmin": is_admin}
-    return jsonify({"message": "登入成功", "user": user_info}), 200
-'''

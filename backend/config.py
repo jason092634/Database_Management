@@ -19,3 +19,5 @@ REDIS_CONFIG = {
     "password": os.getenv("REDIS_PASSWORD"),
     "db": int(os.getenv("REDIS_DB")),
 }
+
+ADMIN_SECRET_KEY = os.getenv("ADMIN_SECRET_KEY")
