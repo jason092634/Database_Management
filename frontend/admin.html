@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <title>管理員控制台</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      .tab-buttons {
+        margin-bottom: 20px;
+      }
+      .tab-buttons button {
+        margin-right: 10px;
+        padding: 10px 20px;
+        cursor: pointer;
+      }
+      .tab-content {
+        display: none;
+        padding: 20px;
+        border: 1px solid #ddd;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      .form-container {
+        display: flex;
+        gap: 40px;
+      }
+      .form-box {
+        flex: 1;
+        border: 1px solid #ccc;
+        padding: 15px;
+        border-radius: 5px;
+      }
+      input,
+      select {
+        display: block;
+        margin-bottom: 10px;
+        padding: 5px;
+        width: 100%;
+      }
+      label {
+        margin-top: 10px;
+        display: block;
+      }
+      button.submit-btn {
+        margin-top: 10px;
+        padding: 8px 16px;
+        cursor: pointer;
+      }
+      h3 {
+        margin-top: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>管理員控制台</h1>
+
+    <div class="tab-buttons">
+      <button onclick="showTab('team')">球隊管理</button>
+      <button onclick="showTab('player')">球員管理</button>
+      <button onclick="showTab('umpire')">裁判管理</button>
+      <button onclick="showTab('match')">比賽管理</button>
+      <button onclick="location.href='dashboard.html'">回主畫面</button>
+    </div>
+
+    <!-- 球隊管理 -->
+    <div id="team" class="tab-content active">
+      <h2>球隊管理</h2>
+      <div class="form-container">
+        <!-- 新增球隊 -->
+        <div class="form-box">
+          <h3>新增球隊</h3>
+          <form id="add-team-form">
+            <label>球隊名稱<span style="color: red">*</span></label>
+            <input name="team_name" required />
+
+            <label>經理名稱<span style="color: red">*</span></label>
+            <input name="manager_name" />
+
+            <label>球隊狀態<span style="color: red">*</span></label>
+            <select name="team_status">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+
+            <label>所屬聯盟<span style="color: red">*</span></label>
+            <select name="league_id" id="league-select" required>
+              <option value="">請選擇聯盟</option>
+            </select>
+
+            <button type="submit" class="submit-btn">新增</button>
+          </form>
+        </div>
+
+        <!-- 修改球隊 -->
+        <div class="form-box">
+          <h3>修改球隊</h3>
+
+          <!-- 下拉選球隊 -->
+          <label>選擇球隊</label>
+          <select id="team-select" required>
+            <option value="">請選擇球隊</option>
+          </select>
+
+          <form id="edit-team-form">
+            <label>球隊名稱</label>
+            <input name="team_name" id="team_name" />
+
+            <label>經理名稱</label>
+            <input name="manager_name" id="manager_name" />
+
+            <label>狀態</label>
+            <select name="team_status" id="team_status">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+
+            <label>所屬聯盟</label>
+            <select name="league_id" id="league_id">
+              <option value="">無</option>
+            </select>
+
+            <button type="submit" class="submit-btn">修改</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 球員管理 -->
+    <div id="player" class="tab-content">
+      <h2>球員管理</h2>
+      <div class="form-container">
+        <!-- 新增球員 -->
+        <div class="form-box">
+          <h3>新增球員</h3>
+          <form id="add-player-form">
+            <label>球員姓名<span style="color: red">*</span></label>
+            <input name="player_name" required />
+
+            <label>所屬球隊<span style="color: red">*</span></label>
+            <select name="team_id" id="player-team-select" required>
+              <option value="">請選擇球隊</option>
+            </select>
+
+            <label>背號<span style="color: red">*</span></label>
+            <input name="number" />
+
+            <label>球員狀態<span style="color: red">*</span></label>
+            <select name="status">
+              <option value="Active">Active</option>
+              <option value="Retired">Retired</option>
+            </select>
+
+            <button type="submit" class="submit-btn">新增</button>
+          </form>
+        </div>
+
+        <!-- 修改球員 -->
+        <div class="form-box">
+          <h3>修改球員</h3>
+
+          <!-- 選擇球隊 -->
+          <label>選擇球隊</label>
+          <select id="edit-player-team-select">
+            <option value="">請選擇球隊</option>
+          </select>
+
+          <!-- 選擇球員 -->
+          <label>選擇球員</label>
+          <select id="edit-player-select">
+            <option value="">請先選球隊</option>
+          </select>
+
+          <form id="edit-player-form">
+            <label>球員姓名</label>
+            <input name="player_name" id="edit-player-name" />
+
+            <label>所屬球隊</label>
+            <select name="team_id" id="edit-player-team">
+              <option value="">請選擇球隊</option>
+            </select>
+
+            <label>背號</label>
+            <input name="number" id="edit-player-number" />
+
+            <label>球員狀態</label>
+            <select name="status" id="edit-player-status">
+              <option value="Active">Active</option>
+              <option value="Retired">Retired</option>
+            </select>
+
+            <button type="submit" class="submit-btn">修改</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 裁判管理 -->
+    <div id="umpire" class="tab-content">
+      <h2>裁判管理</h2>
+      <div class="form-container">
+        <div class="form-box">
+          <h3>新增裁判</h3>
+          <form id="add-umpire-form">
+            <label>裁判姓名<span style="color: red">*</span></label>
+            <input name="umpire_name" required />
+            <label>裁判狀態<span style="color: red">*</span></label>
+            <select name="status">
+              <option value="Active">Active</option>
+              <option value="Retired">Retired</option>
+            </select>
+            <button type="submit" class="submit-btn">新增</button>
+          </form>
+        </div>
+
+        <div class="form-box">
+          <h3>修改裁判</h3>
+
+          <!-- 選擇裁判 -->
+          <label>選擇裁判</label>
+          <select id="edit-umpire-select">
+            <option value="">請選擇裁判</option>
+          </select>
+
+          <form id="edit-umpire-form">
+            <label>裁判姓名</label>
+            <input name="umpire_name" id="edit-umpire-name" />
+
+            <label>裁判狀態</label>
+            <select name="status" id="edit-umpire-status">
+              <option value="Active">Active</option>
+              <option value="Retired">Retired</option>
+            </select>
+
+            <button type="submit" class="submit-btn">修改</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 比賽管理 -->
+    <div id="match" class="tab-content">
+      <h2>比賽管理</h2>
+      <div class="form-container">
+        <!-- 新增比賽 -->
+        <div class="form-box">
+          <h3>新增比賽</h3>
+          <form id="add-match-form">
+            <label>比賽日期<span style="color: red">*</span></label>
+            <input type="date" name="date" required />
+
+            <label>主隊<span style="color: red">*</span></label>
+            <select id="home-team-select" required>
+              <option value="">請選擇主隊</option>
+            </select>
+
+            <label>客隊<span style="color: red">*</span></label>
+            <select id="away-team-select" required>
+              <option value="">請選擇客隊</option>
+            </select>
+
+            <label>比賽狀態<span style="color: red">*</span></label>
+            <select name="status" required>
+              <option value="scheduled">scheduled</option>
+              <option value="completed">completed</option>
+              <option value="postponed">postponed</option>
+            </select>
+
+            <label>比賽場地<span style="color: red">*</span></label>
+            <input name="location" required/>
+
+            <label>開始時間<span style="color: red">*</span></label>
+            <input type="time" name="start_time" required/>
+
+            <label>主隊分數</label>
+            <input type="number" name="home_score" />
+
+            <label>客隊分數</label>
+            <input type="number" name="away_score" />
+
+            <label>天氣</label>
+            <input name="weather" />
+
+            <label>溫度</label>
+            <input type="number" step="0.1" name="temperature" />
+
+            <label>觀眾人數</label>
+            <input type="number" name="attendance" />
+
+            <button type="submit" class="submit-btn">新增</button>
+          </form>
+        </div>
+
+        <!-- 修改比賽 -->
+        <div class="form-box">
+          <h3>修改比賽</h3>
+
+          <!-- 選擇日期 -->
+          <label>選擇日期</label>
+          <input type="date" id="edit-match-datepicker" />
+
+          <!-- 選擇比賽 -->
+          <label>選擇比賽</label>
+          <select id="edit-match-select">
+            <option value="">請先選擇日期</option>
+          </select>
+
+          <form id="edit-match-form">
+            <label>比賽日期</label>
+            <input type="date" id="edit-match-date" />
+
+            <label>主隊</label>
+            <select id="edit-home-team-select"></select>
+
+            <label>客隊</label>
+            <select id="edit-away-team-select"></select>
+
+            <label>比賽狀態</label>
+            <select id="edit-status">
+              <option value="scheduled">scheduled</option>
+              <option value="completed">completed</option>
+              <option value="postponed">postponed</option>
+            </select>
+
+            <label>比賽場地</label>
+            <input id="edit-location" />
+
+            <label>開始時間</label>
+            <input type="time" id="edit-start-time" />
+
+            <label>主隊分數</label>
+            <input type="number" id="edit-home-score" />
+
+            <label>客隊分數</label>
+            <input type="number" id="edit-away-score" />
+
+            <label>天氣</label>
+            <input id="edit-weather" />
+
+            <label>溫度</label>
+            <input type="number" step="0.1" id="edit-temperature" />
+
+            <label>觀眾人數</label>
+            <input type="number" id="edit-attendance" />
+
+            <button type="submit" class="submit-btn">修改</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function showTab(tabId) {
+        document
+          .querySelectorAll(".tab-content")
+          .forEach((tab) => tab.classList.remove("active"));
+        document.getElementById(tabId).classList.add("active");
+      }
+
+      document
+        .getElementById("add-team-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target);
+          const payload = {
+            team_name: formData.get("team_name"),
+            manager_name: formData.get("manager_name"),
+            team_status: formData.get("team_status"),
+            league_id: formData.get("league_id"),
+          };
+          try {
+            const res = await fetch("/admin/team/add", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            const result = await res.json();
+            if (result.success) {
+              alert("新增球隊成功");
+              e.target.reset();
+            } else {
+              alert("新增球隊失敗: " + result.error);
+            }
+          } catch (err) {
+            alert("新增球隊發生錯誤");
+            console.error(err);
+          }
+        });
+
+      async function loadTeams() {
+        const res = await fetch("/admin/teams");
+        const json = await res.json();
+
+        if (!json.success) {
+          alert("無法載入球隊列表：" + json.error);
+          return;
+        }
+
+        const teams = json.teams;
+        const select = document.getElementById("team-select");
+
+        teams.forEach((t) => {
+          const op = document.createElement("option");
+          op.value = t.team_id;
+
+          // 顯示用
+          op.textContent = `${t.team_name}（ID: ${t.team_id}）`;
+
+          // 資料用（更可靠）
+          op.dataset.teamname = t.team_name;
+          op.dataset.manager = t.manager_name;
+          op.dataset.status = t.team_status;
+          op.dataset.league = t.league_id;
+
+          select.appendChild(op);
+        });
+      }
+
+      async function loadLeagues() {
+        try {
+          const res = await fetch("/admin/leagues");
+          const data = await res.json();
+
+          if (!data.success) {
+            console.error("載入聯盟失敗：", data.error);
+            return;
+          }
+
+          // 新增球隊用的 select
+          const addSelect = document.getElementById("league-select");
+          // 修改球隊用的 select
+          const editSelect = document.getElementById("league_id");
+
+          data.leagues.forEach((l) => {
+            // 新增球隊選單
+            if (addSelect) {
+              const opt = document.createElement("option");
+              opt.value = l.league_id;
+              opt.textContent = l.league_name;
+              addSelect.appendChild(opt);
+            }
+
+            // 修改球隊選單
+            if (editSelect) {
+              const opt2 = document.createElement("option");
+              opt2.value = l.league_id;
+              opt2.textContent = l.league_name;
+              editSelect.appendChild(opt2);
+            }
+          });
+        } catch (err) {
+          console.error("載入聯盟失敗", err);
+        }
+      }
+
+      document
+        .getElementById("team-select")
+        .addEventListener("change", function () {
+          const selected = this.options[this.selectedIndex];
+
+          document.getElementById("team_name").value =
+            selected.dataset.teamname || "";
+          document.getElementById("manager_name").value =
+            selected.dataset.manager || "";
+          document.getElementById("team_status").value =
+            selected.dataset.status || "Active";
+
+          document.getElementById("league_id").value = selected.dataset.league
+            ? selected.dataset.league
+            : "";
+        });
+
+      document
+        .getElementById("edit-team-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const team_id = document.getElementById("team-select").value;
+          if (!team_id) {
+            alert("請先選擇球隊");
+            return;
+          }
+
+          const data = {
+            team_id,
+            team_name: document.getElementById("team_name").value,
+            manager_name: document.getElementById("manager_name").value,
+            team_status: document.getElementById("team_status").value,
+            league_id: document.getElementById("league_id").value,
+          };
+
+          const res = await fetch("/admin/team/edit", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+          });
+
+          const result = await res.json();
+          if (result.success) {
+            alert(result.message || "修改成功！");
+
+            // 取得目前選中的球隊 ID
+            const currentTeamID = document.getElementById("team-select").value;
+
+            // 先清空下拉選單再重新載入球隊列表
+            const teamSelect = document.getElementById("team-select");
+            teamSelect.innerHTML = '<option value="">請選擇球隊</option>';
+            await loadTeams();
+
+            // 自動選回剛剛修改的球隊
+            const option = document.querySelector(
+              `#team-select option[value="${currentTeamID}"]`
+            );
+            if (option) option.selected = true;
+          } else {
+            alert(result.error || "修改失敗");
+          }
+        });
+
+      async function loadPlayerTeams() {
+        try {
+          const res = await fetch("/admin/teams");
+          const data = await res.json();
+
+          if (!data.success) {
+            console.error("載入球隊失敗：", data.error);
+            return;
+          }
+
+          const select = document.getElementById("player-team-select");
+          data.teams.forEach((t) => {
+            const option = document.createElement("option");
+            option.value = t.team_id;
+            option.textContent = t.team_name;
+            select.appendChild(option);
+          });
+        } catch (err) {
+          console.error("載入球隊失敗", err);
+        }
+      }
+
+      document
+        .getElementById("add-player-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const formData = new FormData(e.target);
+          const payload = {
+            player_name: formData.get("player_name"),
+            team_id: formData.get("team_id"),
+            number: formData.get("number"),
+            status: formData.get("status"),
+          };
+
+          try {
+            const res = await fetch("/admin/player/add", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            const result = await res.json();
+
+            if (result.success) {
+              alert("新增球員成功");
+              e.target.reset();
+            } else {
+              alert("新增球員失敗: " + result.error);
+            }
+          } catch (err) {
+            console.error(err);
+            alert("新增球員發生錯誤");
+          }
+        });
+
+      async function loadEditPlayerTeams() {
+        try {
+          const res = await fetch("/admin/teams");
+          const data = await res.json();
+
+          if (!data.success) {
+            console.error("載入球隊失敗：", data.error);
+            return;
+          }
+
+          const teamSelect = document.getElementById("edit-player-team-select");
+          const formTeamSelect = document.getElementById("edit-player-team"); // form 裡的 select
+          teamSelect.innerHTML = '<option value="">請選擇球隊</option>';
+          formTeamSelect.innerHTML = '<option value="">請選擇球隊</option>';
+
+          data.teams.forEach((t) => {
+            // 下拉選球隊
+            const op1 = document.createElement("option");
+            op1.value = t.team_id;
+            op1.textContent = t.team_name;
+            teamSelect.appendChild(op1);
+
+            const op2 = document.createElement("option");
+            op2.value = t.team_id;
+            op2.textContent = t.team_name;
+            formTeamSelect.appendChild(op2);
+          });
+        } catch (err) {
+          console.error("載入球隊失敗", err);
+        }
+      }
+
+      document
+        .getElementById("edit-player-team-select")
+        .addEventListener("change", async function () {
+          const teamId = this.value;
+          const playerSelect = document.getElementById("edit-player-select");
+          playerSelect.innerHTML = '<option value="">載入中...</option>';
+
+          if (!teamId) {
+            playerSelect.innerHTML = '<option value="">請先選球隊</option>';
+            return;
+          }
+
+          try {
+            const res = await fetch(`/admin/players?team_id=${teamId}`);
+            const data = await res.json();
+
+            if (!data.success) {
+              console.error("載入球員失敗：", data.error);
+              playerSelect.innerHTML = '<option value="">載入球員失敗</option>';
+              return;
+            }
+
+            playerSelect.innerHTML = '<option value="">請選擇球員</option>';
+            data.players.forEach((p) => {
+              const op = document.createElement("option");
+              op.value = p.player_id;
+              op.textContent = `${p.player_name}（背號: ${p.number || ""}）`;
+              op.dataset.name = p.player_name;
+              op.dataset.number = p.number;
+              op.dataset.status = p.status;
+              op.dataset.team = p.team_id;
+              playerSelect.appendChild(op);
+            });
+
+            // 同步「所屬球隊」下拉選單
+            const editPlayerTeam = document.getElementById("edit-player-team");
+            editPlayerTeam.value = teamId;
+          } catch (err) {
+            console.error(err);
+            playerSelect.innerHTML = '<option value="">載入球員失敗</option>';
+          }
+        });
+
+      document
+        .getElementById("edit-player-select")
+        .addEventListener("change", function () {
+          const selected = this.options[this.selectedIndex];
+          if (!selected.value) return;
+
+          document.getElementById("edit-player-name").value =
+            selected.dataset.name || "";
+          document.getElementById("edit-player-number").value =
+            selected.dataset.number || "";
+          document.getElementById("edit-player-status").value =
+            selected.dataset.status || "Active";
+          document.getElementById("edit-player-team").value =
+            selected.dataset.team || "";
+        });
+
+      document
+        .getElementById("edit-player-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const playerSelect = document.getElementById("edit-player-select");
+          const playerId = playerSelect.value;
+          if (!playerId) {
+            alert("請先選擇球員");
+            return;
+          }
+
+          const data = {
+            player_id: playerId,
+            player_name: document.getElementById("edit-player-name").value,
+            number: document.getElementById("edit-player-number").value,
+            status: document.getElementById("edit-player-status").value,
+            team_id: document.getElementById("edit-player-team").value,
+          };
+
+          try {
+            const res = await fetch("/admin/player/edit", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+            const result = await res.json();
+
+            if (result.success) {
+              alert("球員修改成功！");
+
+              // 記住目前選中的球員 ID
+              const currentPlayerId = playerId;
+              const currentTeamId = document.getElementById(
+                "edit-player-team-select"
+              ).value;
+
+              if (currentTeamId) {
+                const playerSelect =
+                  document.getElementById("edit-player-select");
+                playerSelect.innerHTML = '<option value="">載入中...</option>';
+
+                // 重新載入球員
+                const res2 = await fetch(
+                  `/admin/players?team_id=${currentTeamId}`
+                );
+                const data2 = await res2.json();
+
+                if (data2.success) {
+                  playerSelect.innerHTML =
+                    '<option value="">請選擇球員</option>';
+                  data2.players.forEach((p) => {
+                    const op = document.createElement("option");
+                    op.value = p.player_id;
+                    op.textContent = `${p.player_name}（背號: ${
+                      p.number || ""
+                    }）`;
+                    op.dataset.name = p.player_name;
+                    op.dataset.number = p.number;
+                    op.dataset.status = p.status;
+                    op.dataset.team = p.team_id;
+                    playerSelect.appendChild(op);
+                  });
+
+                  // 自動選回剛剛修改的球員
+                  const option = playerSelect.querySelector(
+                    `option[value="${currentPlayerId}"]`
+                  );
+                  if (option) {
+                    option.selected = true;
+                    // 觸發 change 事件自動填入表單
+                    option.dispatchEvent(new Event("change"));
+                  }
+                } else {
+                  playerSelect.innerHTML =
+                    '<option value="">載入球員失敗</option>';
+                }
+              }
+            } else {
+              alert(result.error || "修改失敗");
+            }
+          } catch (err) {
+            console.error(err);
+            alert("修改球員發生錯誤");
+          }
+        });
+
+      // 新增裁判
+      document
+        .getElementById("add-umpire-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const formData = new FormData(e.target);
+          const payload = {
+            name: formData.get("umpire_name"),
+            status: formData.get("status"),
+          };
+
+          try {
+            const res = await fetch("/admin/umpire/add", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+
+            const result = await res.json();
+
+            if (result.success) {
+              alert("新增裁判成功！");
+              e.target.reset();
+            } else {
+              alert("新增裁判失敗: " + result.error);
+            }
+          } catch (err) {
+            console.error(err);
+            alert("新增裁判發生錯誤");
+          }
+        });
+
+      // 載入裁判清單
+      async function loadUmpires() {
+        try {
+          const res = await fetch("/admin/umpires"); // 後端要提供 GET /admin/umpires API
+          const data = await res.json();
+          if (!data.success) {
+            console.error("載入裁判失敗：", data.error);
+            return;
+          }
+
+          const select = document.getElementById("edit-umpire-select");
+          select.innerHTML = '<option value="">請選擇裁判</option>';
+
+          data.umpires.forEach((u) => {
+            const op = document.createElement("option");
+            op.value = u.umpire_id;
+            op.textContent = u.name;
+            op.dataset.name = u.name;
+            op.dataset.status = u.status;
+            select.appendChild(op);
+          });
+        } catch (err) {
+          console.error("載入裁判失敗", err);
+        }
+      }
+
+      // 選擇裁判 → 填入表單
+      document
+        .getElementById("edit-umpire-select")
+        .addEventListener("change", function () {
+          const selected = this.options[this.selectedIndex];
+          if (!selected.value) return;
+
+          document.getElementById("edit-umpire-name").value =
+            selected.dataset.name || "";
+          document.getElementById("edit-umpire-status").value =
+            selected.dataset.status || "Active";
+        });
+
+      // 修改裁判
+      document
+        .getElementById("edit-umpire-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const umpireSelect = document.getElementById("edit-umpire-select");
+          const umpireId = umpireSelect.value;
+          if (!umpireId) {
+            alert("請先選擇裁判");
+            return;
+          }
+
+          const data = {
+            umpire_id: umpireId,
+            name: document.getElementById("edit-umpire-name").value,
+            status: document.getElementById("edit-umpire-status").value,
+          };
+
+          try {
+            const res = await fetch("/admin/umpire/edit", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+            const result = await res.json();
+            if (result.success) {
+              alert("裁判修改成功！");
+
+              // 重新載入裁判列表，但保持選中狀態
+              const currentUmpireId = umpireId;
+              await loadUmpires();
+
+              // 選中剛剛修改的裁判
+              const option = document.querySelector(
+                `#edit-umpire-select option[value="${currentUmpireId}"]`
+              );
+              if (option) {
+                option.selected = true;
+                // 觸發 change 事件自動填入表單
+                option.dispatchEvent(new Event("change"));
+              }
+            } else {
+              alert("修改失敗：" + result.error);
+            }
+          } catch (err) {
+            console.error(err);
+            alert("修改裁判發生錯誤");
+          }
+        });
+
+      async function loadTeamsForMatch() {
+        try {
+          const res = await fetch("/admin/teams");
+          const data = await res.json();
+          if (!data.success) return;
+
+          const homeSelect = document.getElementById("home-team-select");
+          const awaySelect = document.getElementById("away-team-select");
+
+          // 清空選單並加上預設
+          homeSelect.innerHTML = '<option value="">請選擇主隊</option>';
+          awaySelect.innerHTML = '<option value="">請選擇客隊</option>';
+
+          data.teams.forEach((team) => {
+            const option = `<option value="${team.team_id}">${team.team_name}</option>`;
+            homeSelect.insertAdjacentHTML("beforeend", option);
+            awaySelect.insertAdjacentHTML("beforeend", option);
+          });
+        } catch (err) {
+          console.error(err);
+          alert("載入球隊清單失敗");
+        }
+      }
+
+      document
+        .getElementById("add-match-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const formData = new FormData(e.target);
+          const payload = {
+            date: formData.get("date"),
+            home_team_id: document.getElementById("home-team-select").value,
+            away_team_id: document.getElementById("away-team-select").value,
+            status: formData.get("status"),
+            location: formData.get("location"),
+            start_time: formData.get("start_time"),
+            home_score: formData.get("home_score")
+              ? parseInt(formData.get("home_score"))
+              : 0,
+            away_score: formData.get("away_score")
+              ? parseInt(formData.get("away_score"))
+              : 0,
+            weather: formData.get("weather"),
+            temperature: formData.get("temperature")
+              ? parseFloat(formData.get("temperature"))
+              : null,
+            attendance: formData.get("attendance")
+              ? parseInt(formData.get("attendance"))
+              : null,
+          };
+
+          // 驗證必填欄位
+          if (
+            !payload.date ||
+            !payload.home_team_id ||
+            !payload.away_team_id ||
+            !payload.status ||
+            !payload.location ||
+            !payload.start_time
+          ) {
+            alert("日期、主隊、客隊、比賽狀態、比賽場地、開始時間為必填");
+            return;
+          }
+
+          if (payload.home_team_id === payload.away_team_id) {
+            alert("主隊與客隊不能相同");
+            return;
+          }
+
+          try {
+            const res = await fetch("/admin/match/add", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+
+            const result = await res.json();
+            if (result.success) {
+              alert("新增比賽成功！");
+              e.target.reset();
+            } else {
+              alert("新增比賽失敗：" + result.error);
+            }
+          } catch (err) {
+            console.error(err);
+            alert("新增比賽發生錯誤");
+          }
+        });
+
+      async function loadTeamsForEditMatch() {
+        try {
+          const res = await fetch("/admin/teams");
+          const result = await res.json();
+          if (!result.success) throw new Error(result.error);
+
+          const homeSelect = document.getElementById("edit-home-team-select");
+          const awaySelect = document.getElementById("edit-away-team-select");
+
+          homeSelect.innerHTML = '<option value="">請選擇主隊</option>';
+          awaySelect.innerHTML = '<option value="">請選擇客隊</option>';
+
+          result.teams.forEach((team) => {
+            const option1 = document.createElement("option");
+            option1.value = team.team_id;
+            option1.text = team.team_name;
+            homeSelect.add(option1);
+
+            const option2 = document.createElement("option");
+            option2.value = team.team_id;
+            option2.text = team.team_name;
+            awaySelect.add(option2);
+          });
+        } catch (err) {
+          console.error(err);
+          alert("載入球隊失敗：" + err.message);
+        }
+      }
+
+      // 選擇日期時，載入該日期比賽
+      document
+        .getElementById("edit-match-datepicker")
+        .addEventListener("change", async function () {
+          const date = this.value;
+          if (!date) return;
+
+          try {
+            const res = await fetch(`/admin/matches?date=${date}`);
+            const result = await res.json();
+            const matchSelect = document.getElementById("edit-match-select");
+            matchSelect.length = 1; // 保留第一個 option
+
+            if (result.success) {
+              result.matches.forEach((match) => {
+                const option = document.createElement("option");
+                option.value = match.match_id;
+                option.text = `${match.home_team_name} vs ${
+                  match.away_team_name
+                } (${match.start_time || "--:--"})`;
+                option.dataset.info = JSON.stringify(match);
+                matchSelect.add(option);
+              });
+            } else {
+              alert("載入比賽失敗：" + result.error);
+            }
+          } catch (err) {
+            console.error(err);
+            alert("載入比賽發生錯誤");
+          }
+        });
+
+      // 選擇比賽後帶入表單
+      document
+        .getElementById("edit-match-select")
+        .addEventListener("change", function () {
+          const selected = this.selectedOptions[0];
+          if (!selected || !selected.dataset.info) return;
+
+          const match = JSON.parse(selected.dataset.info);
+
+          document.getElementById("edit-match-date").value = match.date;
+          document.getElementById("edit-home-team-select").value =
+            match.home_team_id;
+          document.getElementById("edit-away-team-select").value =
+            match.away_team_id;
+          document.getElementById("edit-status").value = match.status;
+          document.getElementById("edit-location").value = match.location || "";
+          document.getElementById("edit-start-time").value =
+            match.start_time || "";
+          document.getElementById("edit-home-score").value =
+            match.home_score || 0;
+          document.getElementById("edit-away-score").value =
+            match.away_score || 0;
+          document.getElementById("edit-weather").value = match.weather || "";
+          document.getElementById("edit-temperature").value =
+            match.temperature || "";
+          document.getElementById("edit-attendance").value =
+            match.attendance || "";
+        });
+
+      // 提交修改
+      document
+        .getElementById("edit-match-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const matchSelect = document.getElementById("edit-match-select");
+          const matchId = matchSelect.value;
+          if (!matchId) {
+            alert("請先選擇比賽");
+            return;
+          }
+
+          const data = {
+            match_id: matchId,
+            date: document.getElementById("edit-match-date").value,
+            home_team_id: document.getElementById("edit-home-team-select")
+              .value,
+            away_team_id: document.getElementById("edit-away-team-select")
+              .value,
+            status: document.getElementById("edit-status").value,
+            location: document.getElementById("edit-location").value,
+            start_time: document.getElementById("edit-start-time").value,
+            home_score:
+              parseInt(document.getElementById("edit-home-score").value) || 0,
+            away_score:
+              parseInt(document.getElementById("edit-away-score").value) || 0,
+            weather: document.getElementById("edit-weather").value,
+            temperature:
+              parseFloat(document.getElementById("edit-temperature").value) ||
+              null,
+            attendance:
+              parseInt(document.getElementById("edit-attendance").value) ||
+              null,
+          };
+
+          if (data.home_team_id === data.away_team_id) {
+            alert("主隊與客隊不能相同！");
+            return;
+          }
+
+          try {
+            const res = await fetch("/admin/match/edit", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+            const result = await res.json();
+            if (result.success) {
+              alert("比賽修改成功！");
+            } else {
+              alert("修改失敗：" + result.error);
+            }
+          } catch (err) {
+            console.error(err);
+            alert("修改比賽發生錯誤");
+          }
+        });
+
+      loadLeagues();
+      loadTeams();
+      loadPlayerTeams();
+      loadEditPlayerTeams();
+      loadUmpires();
+      loadTeamsForMatch();
+      loadTeamsForEditMatch();
+    </script>
+  </body>
+</html>

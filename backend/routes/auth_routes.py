@@ -5,55 +5,67 @@ from config import DB_CONFIG
 
 auth_bp = Blueprint("auth_bp", __name__)
 
+ADMIN_SECRET_KEY = "YOUR_ADMIN_SECRET_KEY"  # 請安全存放
+
 def get_connection():
     return psycopg2.connect(**DB_CONFIG)
 
-# 註冊 API
 @auth_bp.route("/register", methods=["POST"])
-def register_api():
+def register():
     data = request.json
     username = data.get("username")
-    password = data.get("password")
+    password = data.get("password")  # 前端已 hash
     email = data.get("email")
+    admin_key = data.get("admin_key", "")
 
     if not username or not password or not email:
-        return jsonify({"success": False, "error": "欄位不可為空"})
+        return jsonify({"success": False, "error": "所有欄位皆需填寫"})
 
-    # 後端加密密碼
-    hashed_password = generate_password_hash(password)
+    # 判斷身份
+    role = "User"
+    if admin_key:
+        if admin_key == ADMIN_SECRET_KEY:
+            role = "Admin"
+        else:
+            return jsonify({"success": False, "error": "Admin 密鑰錯誤"})
 
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO "User" (username, password, email)
-            VALUES (%s, %s, %s)
-            RETURNING user_id;
-        """, (username, hashed_password, email))
-        user_id = cur.fetchone()[0]
+
+        # 檢查 username 是否存在
+        cur.execute('SELECT COUNT(*) FROM "User" WHERE username = %s', (username,))
+        if cur.fetchone()[0] > 0:
+            cur.close()
+            conn.close()
+            return jsonify({"success": False, "error": "使用者名稱已存在"})
+
+        # 檢查 email 是否存在
+        cur.execute('SELECT COUNT(*) FROM "User" WHERE email = %s', (email,))
+        if cur.fetchone()[0] > 0:
+            cur.close()
+            conn.close()
+            return jsonify({"success": False, "error": "電子郵件已存在"})
+
+        # 新增使用者
+        cur.execute(
+            'INSERT INTO "User" (username, password, email, role) VALUES (%s, %s, %s, %s)',
+            (username, password, email, role)
+        )
+
         conn.commit()
         cur.close()
         conn.close()
-        return jsonify({"success": True, "user_id": user_id})
-
-    except psycopg2.errors.UniqueViolation as e:
-        conn.rollback()
-        if "User_username_key" in str(e):
-            return jsonify({"success": False, "error": "使用者名稱已被使用，請換一個"})
-        elif "User_email_key" in str(e):
-            return jsonify({"success": False, "error": "電子郵件已被使用，請換一個"})
-        else:
-            return jsonify({"success": False, "error": "註冊失敗，資料已存在"})
+        return jsonify({"success": True, "role": role})
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
-# 登入 API
 @auth_bp.route("/login", methods=["POST"])
 def login_api():
     data = request.json
     username = data.get("username")
-    password = data.get("password")
+    password = data.get("password")  # 前端已 SHA-256 hash
 
     if not username or not password:
         return jsonify({"success": False, "error": "欄位不可為空"})
@@ -62,8 +74,8 @@ def login_api():
         conn = get_connection()
         cur = conn.cursor()
         cur.execute("""
-            SELECT user_id, password 
-            FROM "User" 
+            SELECT user_id, password, role
+            FROM "User"
             WHERE username = %s;
         """, (username,))
         user = cur.fetchone()
@@ -73,12 +85,17 @@ def login_api():
         if not user:
             return jsonify({"success": False, "error": "此帳號不存在"})
 
-        user_id, hashed_password = user
+        user_id, hashed_password, role = user
 
-        if not check_password_hash(hashed_password, password):
+        # 前端已 hash，直接比對字串
+        if password != hashed_password:
             return jsonify({"success": False, "error": "密碼錯誤"})
 
-        return jsonify({"success": True, "user_id": user_id})
+        return jsonify({
+            "success": True,
+            "user_id": user_id,
+            "role": role
+        })
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
