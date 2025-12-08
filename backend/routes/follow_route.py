@@ -356,3 +356,102 @@ def unfollow_team():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+# 取得某球員最近 10 場比賽資訊
+@follow.route("/follow/player/<int:player_id>/recent_matches", methods=["GET"])
+def get_player_recent_matches(player_id):
+    """
+    回傳指定球員最近 10 場有出賽的比賽資訊
+    """
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT 
+                m.match_id,
+                m.date,
+                m.location,
+                ht.team_name AS home_team_name,
+                at.team_name AS away_team_name,
+                m.home_score,
+                m.away_score
+            FROM Match m
+            JOIN Match_Player mp ON m.match_id = mp.match_id
+            JOIN Player p ON mp.player_id = p.player_id
+            LEFT JOIN Team ht ON m.home_team_id = ht.team_id
+            LEFT JOIN Team at ON m.away_team_id = at.team_id
+            WHERE p.player_id = %s
+            ORDER BY m.date DESC, m.start_time DESC NULLS LAST
+            LIMIT 10
+        """, (player_id,))
+
+        rows = cur.fetchall()
+        conn.close()
+
+        result = [
+            {
+                "match_id":        r[0],
+                "date":            r[1],
+                "location":        r[2],
+                "home_team_name":  r[3],
+                "away_team_name":  r[4],
+                "home_score":      r[5],
+                "away_score":      r[6],
+            }
+            for r in rows
+        ]
+
+        return jsonify({"success": True, "result": result})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# 取得某球隊最近 10 場比賽資訊
+@follow.route("/follow/team/<int:team_id>/recent_matches", methods=["GET"])
+def get_team_recent_matches(team_id):
+    """
+    回傳指定球隊最近 10 場比賽（不分主客場）
+    """
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT 
+                m.match_id,
+                m.date,
+                m.location,
+                ht.team_name AS home_team_name,
+                at.team_name AS away_team_name,
+                m.home_score,
+                m.away_score
+            FROM Match m
+            LEFT JOIN Team ht ON m.home_team_id = ht.team_id
+            LEFT JOIN Team at ON m.away_team_id = at.team_id
+            WHERE m.home_team_id = %s OR m.away_team_id = %s
+            ORDER BY m.date DESC, m.start_time DESC NULLS LAST
+            LIMIT 10
+        """, (team_id, team_id))
+
+        rows = cur.fetchall()
+        conn.close()
+
+        result = [
+            {
+                "match_id":        r[0],
+                "date":            r[1],
+                "location":        r[2],
+                "home_team_name":  r[3],
+                "away_team_name":  r[4],
+                "home_score":      r[5],
+                "away_score":      r[6],
+            }
+            for r in rows
+        ]
+
+        return jsonify({"success": True, "result": result})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})

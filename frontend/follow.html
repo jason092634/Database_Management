@@ -91,6 +91,7 @@
                             <th>背號</th>
                             <th>所屬球隊</th>
                             <th>追蹤時間</th>
+                            <th>資訊</th> 
                             <th>操作</th>
                         </tr>
                     </thead>
@@ -100,6 +101,27 @@
                 </table>
             </div>
         </div>
+
+<div class="section">
+    <h2 onclick="toggleSection('player-recent-section')">球員最近十場比賽 ▼</h2>
+    <div id="player-recent-section">
+    <p class="info-text">點擊「查看」後，會在下方顯示該球員最近 10 場比賽結果。</p>
+    <table>
+        <thead>
+            <tr>
+                <th>比賽 ID</th>
+                <th>日期</th>
+                <th>場地</th>
+                <th>主隊</th>
+                <th>客隊</th>
+                <th>比數</th>
+            </tr>
+        </thead>
+        <tbody id="player-recent-body">
+            <tr><td colspan="6">尚未選擇球員</td></tr>
+        </tbody>
+    </table>
+</div>
 
         <!-- 查詢並追蹤球員 -->
         <div class="section">
@@ -143,6 +165,7 @@
                             <th>球隊名稱</th>
                             <th>總教練</th>
                             <th>追蹤時間</th>
+                            <th>資訊</th> 
                             <th>操作</th>
                             
                         </tr>
@@ -153,6 +176,27 @@
                 </table>
             </div>
         </div>
+
+        <div class="section">
+    <h2 onclick="toggleSection('team-recent-section')">球隊最近十場比賽 ▼</h2>
+    <div id="team-recent-section">
+    <p class="info-text">點擊「查看」後，會在下方顯示該球隊最近 10 場比賽結果。</p>
+    <table>
+        <thead>
+            <tr>
+                <th>比賽 ID</th>
+                <th>日期</th>
+                <th>場地</th>
+                <th>主隊</th>
+                <th>客隊</th>
+                <th>比數</th>
+            </tr>
+        </thead>
+        <tbody id="team-recent-body">
+            <tr><td colspan="6">尚未選擇球隊</td></tr>
+        </tbody>
+    </table>
+</div>
 
         <!-- 查詢並追蹤球隊 -->
         <div class="section">
@@ -318,6 +362,11 @@
                 <td>${p.team_name ?? ""}</td>
                 <td>${p.follow_time}</td>
                 <td>
+                    <button class="follow-btn" onclick="showPlayerRecentMatches(${p.player_id})">
+                        查看
+                    </button>
+                </td>
+                <td>
                     <button class="follow-btn" onclick="unfollowPlayer(${p.player_id})">
                         取消追蹤
                     </button>
@@ -419,14 +468,14 @@
         const data = await res.json();
 
         if (!data.success) {
-            tbody.innerHTML = `<tr><td colspan="5" class="empty-row">${data.error || "載入失敗"}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="empty-row">${data.error || "載入失敗"}</td></tr>`;
             return;
         }
 
         if (data.result.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="empty-row">目前尚未追蹤任何球隊</td>
+                    <td colspan="6" class="empty-row">目前尚未追蹤任何球隊</td>
                 </tr>`;
             return;
         }
@@ -439,6 +488,11 @@
                 <td>${t.manager_name}</td>
                 <td>${t.follow_time}</td>
                 <td>
+                    <button class="follow-btn" onclick="showTeamRecentMatches(${t.team_id})">
+                        查看
+                    </button>
+                </td>
+                <td>
                     <button class="follow-btn" onclick="unfollowTeam(${t.team_id})">
                         取消追蹤
                     </button>
@@ -449,7 +503,7 @@
 
     } catch (err) {
         console.error(err);
-        tbody.innerHTML = `<tr><td colspan="5" class="empty-row">系統錯誤：${err}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-row">系統錯誤：${err}</td></tr>`;
     }
 }
 
@@ -497,6 +551,86 @@ async function unfollowTeam(teamId) {
     } catch (err) {
         console.error(err);
         alert("取消追蹤失敗，請稍後再試");
+    }
+}
+
+async function showPlayerRecentMatches(playerId) {
+    const tbody = document.getElementById("player-recent-body");
+    tbody.innerHTML = `<tr><td colspan="6">載入中...</td></tr>`;
+
+    try {
+        const res = await fetch(`${BASE_URL}/follow/player/${playerId}/recent_matches`);
+        const data = await res.json();
+
+        console.log("player recent matches response:", data);  // debug 用，看有沒有資料
+
+        if (!data.success) {
+            tbody.innerHTML = `<tr><td colspan="6">${data.error || "載入失敗"}</td></tr>`;
+            return;
+        }
+
+        const matches = data.result || [];
+        if (matches.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6">查無最近比賽紀錄</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = "";
+        matches.forEach(m => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${m.match_id}</td>
+                <td>${m.date}</td>
+                <td>${m.location ?? ""}</td>
+                <td>${m.home_team_name ?? ""}</td>
+                <td>${m.away_team_name ?? ""}</td>
+                <td>${m.home_score} : ${m.away_score}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+        console.error(err);
+        tbody.innerHTML = `<tr><td colspan="6">系統錯誤：${err}</td></tr>`;
+    }
+}
+
+async function showTeamRecentMatches(teamId) {
+    const tbody = document.getElementById("team-recent-body");
+    tbody.innerHTML = `<tr><td colspan="6">載入中...</td></tr>`;
+
+    try {
+        const res = await fetch(`${BASE_URL}/follow/team/${teamId}/recent_matches`);
+        const data = await res.json();
+
+        if (!data.success) {
+            tbody.innerHTML = `<tr><td colspan="6">${data.error || "載入失敗"}</td></tr>`;
+            return;
+        }
+
+        const matches = data.result || [];
+        if (matches.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6">查無最近比賽紀錄</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = "";
+        matches.forEach(m => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${m.match_id}</td>
+                <td>${m.date}</td>
+                <td>${m.location ?? ""}</td>
+                <td>${m.home_team_name ?? ""}</td>
+                <td>${m.away_team_name ?? ""}</td>
+                <td>${m.home_score} : ${m.away_score}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+        console.error(err);
+        tbody.innerHTML = `<tr><td colspan="6">系統錯誤：${err}</td></tr>`;
     }
 }
 
