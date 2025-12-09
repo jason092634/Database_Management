@@ -11,6 +11,7 @@ from routes.player_stats_routes import playerstats_bp
 from routes.leaderboard_routes import leaderboard_bp
 from routes.follow_route import follow
 from routes.search_board_routes import searchboard_bp
+from routes.admin_routes import admin_bp
 
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
@@ -66,6 +67,7 @@ def leaderboard_page():
 def follow_page():
     return send_from_directory(FRONTEND_DIR, "follow.html")
 
+
 # 註冊/登入
 app.register_blueprint(auth_bp)
 
@@ -89,6 +91,8 @@ app.register_blueprint(leaderboard_bp)
 app.register_blueprint(follow)
 
 app.register_blueprint(searchboard_bp)
+
+app.register_blueprint(admin_bp)
 
 # 啟動 Flask
 if __name__ == "__main__":
