@@ -7,9 +7,7 @@ searchboard_bp = Blueprint("searchboard", __name__)
 def get_connection():
     return psycopg2.connect(**DB_CONFIG)
 
-# ------------------------------------
 # 取得排行榜（包含名稱）
-# ------------------------------------
 @searchboard_bp.route("/api/ranking/<category>", methods=["GET"])
 def get_ranking(category):
     if category not in ["players", "teams", "matches"]:
@@ -29,9 +27,7 @@ def get_ranking(category):
     if not data:
         return jsonify({"type": category, "top": top, "data": []}), 200
 
-    # --------------------------
     # 連 DB 取得名稱
-    # --------------------------
     id_list = [int(member) for member, score in data]
 
     try:
@@ -68,7 +64,6 @@ def get_ranking(category):
                 })
 
         elif category == "matches":
-            # 可以用 home vs away 當名稱
             cur.execute(
                 """
                 SELECT m.match_id, ht.team_name, at.team_name
@@ -98,10 +93,7 @@ def get_ranking(category):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# ------------------------------------
 # 清空排行榜
-# ------------------------------------
 @searchboard_bp.route("/api/ranking/<category>", methods=["DELETE"])
 def clear_ranking(category):
     if category not in ["players", "teams", "matches"]:

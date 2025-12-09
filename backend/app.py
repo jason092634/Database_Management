@@ -27,7 +27,9 @@ redis_client = redis.Redis(**REDIS_CONFIG, decode_responses=True)
 app.redis = redis_client
 
 def get_connection():
-    return psycopg2.connect(**DB_CONFIG)
+    conn = psycopg2.connect(**DB_CONFIG)
+    conn.set_session(isolation_level='SERIALIZABLE')  
+    return conn
 
 # 前端頁面路由
 @app.route("/")
