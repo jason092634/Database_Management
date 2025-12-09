@@ -53,6 +53,20 @@
       h3 {
         margin-top: 0;
       }
+      .sub-tab-content {
+        display: none;
+        padding: 10px 0;
+      }
+
+      .sub-tab-content.active {
+        display: block;
+      }
+
+      .sub-tab-buttons button {
+        margin-right: 10px;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -63,6 +77,8 @@
       <button onclick="showTab('player')">球員管理</button>
       <button onclick="showTab('umpire')">裁判管理</button>
       <button onclick="showTab('match')">比賽管理</button>
+      <button onclick="showTab('match_umpire')">比賽裁判管理</button>
+      <button onclick="showTab('match_player')">比賽球員管理</button>
       <button onclick="location.href='dashboard.html'">回主畫面</button>
     </div>
 
@@ -270,10 +286,10 @@
             </select>
 
             <label>比賽場地<span style="color: red">*</span></label>
-            <input name="location" required/>
+            <input name="location" required />
 
             <label>開始時間<span style="color: red">*</span></label>
-            <input type="time" name="start_time" required/>
+            <input type="time" name="start_time" required />
 
             <label>主隊分數</label>
             <input type="number" name="home_score" />
@@ -352,11 +368,222 @@
       </div>
     </div>
 
+    <!-- 比賽裁判管理 -->
+    <div id="match_umpire" class="tab-content">
+      <h2>比賽裁判管理</h2>
+
+      <div class="form-container">
+        <!-- 新增比賽裁判 -->
+        <div class="form-box">
+          <h3>新增比賽裁判</h3>
+
+          <!-- 選擇日期 -->
+          <label>選擇日期<span style="color: red">*</span></label>
+          <input type="date" id="umpire-date" required />
+
+          <!-- 選擇比賽 -->
+          <label>選擇比賽<span style="color: red">*</span></label>
+          <select id="umpire-match-select" required>
+            <option value="">請先選擇日期</option>
+          </select>
+
+          <hr />
+
+          <h4>選擇裁判（可留白）</h4>
+
+          <label>本壘（Home Plate）</label>
+          <select id="umpire-home-plate">
+            <option value="">無</option>
+          </select>
+
+          <label>一壘（First Base）</label>
+          <select id="umpire-first-base">
+            <option value="">無</option>
+          </select>
+
+          <label>二壘（Second Base）</label>
+          <select id="umpire-second-base">
+            <option value="">無</option>
+          </select>
+
+          <label>三壘（Third Base）</label>
+          <select id="umpire-third-base">
+            <option value="">無</option>
+          </select>
+
+          <label>左外野（Left Field）</label>
+          <select id="umpire-left-field">
+            <option value="">無</option>
+          </select>
+
+          <label>右外野（Right Field）</label>
+          <select id="umpire-right-field">
+            <option value="">無</option>
+          </select>
+
+          <button id="submit-umpire" class="submit-btn">新增裁判名單</button>
+        </div>
+
+        <!-- 修改比賽裁判 -->
+        <div class="form-box">
+          <h3>修改比賽裁判</h3>
+
+          <!-- 選擇日期 -->
+          <label>選擇日期<span style="color: red">*</span></label>
+          <input type="date" id="edit-umpire-date" required />
+
+          <!-- 選擇比賽 -->
+          <label>選擇比賽<span style="color: red">*</span></label>
+          <select id="edit-umpire-match-select" required>
+            <option value="">請先選擇日期</option>
+          </select>
+
+          <hr />
+
+          <h4>裁判（可修改）</h4>
+
+          <label>本壘（Home Plate）</label>
+          <select id="edit-umpire-home-plate">
+            <option value="">無</option>
+          </select>
+
+          <label>一壘（First Base）</label>
+          <select id="edit-umpire-first-base">
+            <option value="">無</option>
+          </select>
+
+          <label>二壘（Second Base）</label>
+          <select id="edit-umpire-second-base">
+            <option value="">無</option>
+          </select>
+
+          <label>三壘（Third Base）</label>
+          <select id="edit-umpire-third-base">
+            <option value="">無</option>
+          </select>
+
+          <label>左外野（Left Field）</label>
+          <select id="edit-umpire-left-field">
+            <option value="">無</option>
+          </select>
+
+          <label>右外野（Right Field）</label>
+          <select id="edit-umpire-right-field">
+            <option value="">無</option>
+          </select>
+
+          <button id="update-umpire" class="submit-btn">更新裁判名單</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 比賽球員管理 -->
+    <div id="match_player" class="tab-content">
+      <h2>比賽球員出賽名單管理</h2>
+
+      <!-- 新增/修改子 Tab 按鈕 -->
+      <div class="sub-tab-buttons" style="margin-bottom: 20px">
+        <button onclick="showSubTab('add-match-player')">新增出賽名單</button>
+        <button onclick="showSubTab('edit-match-player')">修改出賽名單</button>
+      </div>
+
+      <!-- 新增出賽名單 -->
+      <div id="add-match-player" class="sub-tab-content active">
+        <div>
+          <label>日期：</label>
+          <input type="date" id="player-date" />
+        </div>
+        <div>
+          <label>比賽：</label>
+          <select id="player-match-select">
+            <option value="">請選擇比賽</option>
+          </select>
+        </div>
+
+        <div class="team-lineup-container" style="display: flex; gap: 50px">
+          <!-- 主場 -->
+          <div class="team-lineup" id="home-lineup" style="flex: 1">
+            <h3>主場球隊先發打序</h3>
+            <div class="starting-lineup" id="home-starting"></div>
+            <h4>先發投手</h4>
+            <select id="home-sp">
+              <option value="">請選擇投手</option>
+            </select>
+            <h4>候補球員</h4>
+            <div class="bench" id="home-bench"></div>
+            <button class="add-bench" data-team="home">新增候補</button>
+          </div>
+
+          <!-- 客場 -->
+          <div class="team-lineup" id="away-lineup" style="flex: 1">
+            <h3>客場球隊先發打序</h3>
+            <div class="starting-lineup" id="away-starting"></div>
+            <h4>先發投手</h4>
+            <select id="away-sp">
+              <option value="">請選擇投手</option>
+            </select>
+            <h4>候補球員</h4>
+            <div class="bench" id="away-bench"></div>
+            <button class="add-bench" data-team="away">新增候補</button>
+          </div>
+        </div>
+
+        <button id="submit-match-player">新增出賽名單</button>
+      </div>
+
+      <!-- 修改出賽名單 -->
+      <div id="edit-match-player" class="sub-tab-content">
+        <div>
+          <label>日期：</label>
+          <input type="date" id="edit-player-date" />
+        </div>
+        <div>
+          <label>比賽：</label>
+          <select id="edit-player-match-select">
+            <option value="">請選擇比賽</option>
+          </select>
+        </div>
+
+        <div class="team-lineup-container" style="display: flex; gap: 50px">
+          <!-- 主場 -->
+          <div class="team-lineup" id="edit-home-lineup" style="flex: 1">
+            <h3>主場球隊先發打序</h3>
+            <div class="starting-lineup" id="edit-home-starting"></div>
+            <h4>先發投手</h4>
+            <select id="edit-home-sp"></select>
+            <h4>候補球員</h4>
+            <div class="bench" id="edit-home-bench"></div>
+            <button class="add-bench" data-team="edit-home">新增候補</button>
+          </div>
+
+          <!-- 客場 -->
+          <div class="team-lineup" id="edit-away-lineup" style="flex: 1">
+            <h3>客場球隊先發打序</h3>
+            <div class="starting-lineup" id="edit-away-starting"></div>
+            <h4>先發投手</h4>
+            <select id="edit-away-sp"></select>
+            <h4>候補球員</h4>
+            <div class="bench" id="edit-away-bench"></div>
+            <button class="add-bench" data-team="edit-away">新增候補</button>
+          </div>
+        </div>
+
+        <button id="update-match-player">修改出賽名單</button>
+      </div>
+    </div>
+
     <script>
       function showTab(tabId) {
         document
           .querySelectorAll(".tab-content")
           .forEach((tab) => tab.classList.remove("active"));
+        document.getElementById(tabId).classList.add("active");
+      }
+
+      function showSubTab(tabId) {
+        document.querySelectorAll(".sub-tab-content").forEach((el) => {
+          el.classList.remove("active");
+        });
         document.getElementById(tabId).classList.add("active");
       }
 
@@ -1113,6 +1340,795 @@
             alert("修改比賽發生錯誤");
           }
         });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const dateInput = document.getElementById("umpire-date");
+        const matchSelect = document.getElementById("umpire-match-select");
+
+        const umpireSelectors = {
+          "Home Plate": document.getElementById("umpire-home-plate"),
+          "First Base": document.getElementById("umpire-first-base"),
+          "Second Base": document.getElementById("umpire-second-base"),
+          "Third Base": document.getElementById("umpire-third-base"),
+          "Left Field": document.getElementById("umpire-left-field"),
+          "Right Field": document.getElementById("umpire-right-field"),
+        };
+
+        // 載入所有裁判
+        async function loadAllUmpires() {
+          try {
+            const res = await fetch("/admin/umpires");
+            const data = await res.json();
+            if (!data.success) return;
+
+            Object.values(umpireSelectors).forEach((sel) => {
+              sel.innerHTML = '<option value="">無</option>';
+              data.umpires.forEach((u) => {
+                const opt = document.createElement("option");
+                opt.value = u.umpire_id;
+                opt.textContent = u.name;
+                sel.appendChild(opt);
+              });
+            });
+          } catch (err) {
+            console.error("載入裁判失敗", err);
+          }
+        }
+        loadAllUmpires();
+
+        // 選日期 → 抓比賽清單
+        dateInput.addEventListener("change", async () => {
+          const date = dateInput.value;
+          matchSelect.innerHTML = '<option value="">請選擇比賽</option>';
+          if (!date) return;
+
+          try {
+            const res = await fetch(`/admin/matches?date=${date}`);
+            const data = await res.json();
+            if (!data.success) return;
+
+            data.matches.forEach((m) => {
+              const opt = document.createElement("option");
+              opt.value = m.match_id;
+              opt.textContent = `${m.start_time || ""} ${m.home_team_name} vs ${
+                m.away_team_name
+              }`;
+              matchSelect.appendChild(opt);
+            });
+          } catch (err) {
+            console.error(err);
+          }
+        });
+
+        // 選比賽 → 載入現有裁判
+        matchSelect.addEventListener("change", async () => {
+          const matchId = matchSelect.value;
+          if (!matchId) return;
+
+          try {
+            const res = await fetch(`/admin/match/umpires?match_id=${matchId}`);
+            const data = await res.json();
+            if (!data.success) return;
+
+            // 清空選單
+            Object.values(umpireSelectors).forEach((sel) => (sel.value = ""));
+
+            data.umpires.forEach((u) => {
+              if (umpireSelectors[u.role]) {
+                umpireSelectors[u.role].value = u.umpire_id;
+              }
+            });
+          } catch (err) {
+            console.error(err);
+          }
+        });
+
+        // 新增 / 更新比賽裁判
+        document
+          .getElementById("submit-umpire")
+          .addEventListener("click", async () => {
+            const matchId = matchSelect.value;
+            if (!matchId) {
+              alert("請先選擇比賽");
+              return;
+            }
+
+            const umpires = Object.entries(umpireSelectors).map(
+              ([role, sel]) => ({
+                role,
+                umpire_id: sel.value || null,
+              })
+            );
+
+            try {
+              const res = await fetch("/admin/match/umpire/add", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ match_id: matchId, umpires }),
+              });
+              const data = await res.json();
+              if (data.success) {
+                alert("裁判名單已更新");
+              } else {
+                alert("更新失敗：" + data.error);
+              }
+            } catch (err) {
+              console.error(err);
+              alert("更新裁判發生錯誤");
+            }
+          });
+      });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // ======== 修改比賽裁判 =========
+        const editDateInput = document.getElementById("edit-umpire-date");
+        const editMatchSelect = document.getElementById(
+          "edit-umpire-match-select"
+        );
+
+        const editUmpireSelectors = {
+          "Home Plate": document.getElementById("edit-umpire-home-plate"),
+          "First Base": document.getElementById("edit-umpire-first-base"),
+          "Second Base": document.getElementById("edit-umpire-second-base"),
+          "Third Base": document.getElementById("edit-umpire-third-base"),
+          "Left Field": document.getElementById("edit-umpire-left-field"),
+          "Right Field": document.getElementById("edit-umpire-right-field"),
+        };
+
+        // 載入所有裁判
+        async function loadAllEditUmpires() {
+          try {
+            const res = await fetch("/admin/umpires");
+            const data = await res.json();
+            if (!data.success) return;
+
+            Object.values(editUmpireSelectors).forEach((sel) => {
+              sel.innerHTML = '<option value="">無</option>';
+              data.umpires.forEach((u) => {
+                const opt = document.createElement("option");
+                opt.value = u.umpire_id;
+                opt.textContent = u.name;
+                sel.appendChild(opt);
+              });
+            });
+          } catch (err) {
+            console.error("載入裁判失敗", err);
+          }
+        }
+        loadAllEditUmpires();
+
+        // 選日期 → 載入比賽
+        editDateInput.addEventListener("change", async () => {
+          const date = editDateInput.value;
+          editMatchSelect.innerHTML = '<option value="">請選擇比賽</option>';
+          if (!date) return;
+
+          try {
+            const res = await fetch(`/admin/matches?date=${date}`);
+            const data = await res.json();
+            if (!data.success) return;
+
+            data.matches.forEach((m) => {
+              const opt = document.createElement("option");
+              opt.value = m.match_id;
+              opt.textContent = `${m.start_time || ""} ${m.home_team_name} vs ${
+                m.away_team_name
+              }`;
+              editMatchSelect.appendChild(opt);
+            });
+          } catch (err) {
+            console.error(err);
+          }
+        });
+
+        // 選比賽 → 載入現有裁判
+        editMatchSelect.addEventListener("change", async () => {
+          const matchId = editMatchSelect.value;
+          if (!matchId) return;
+
+          try {
+            const res = await fetch(`/admin/match/umpires?match_id=${matchId}`);
+            const data = await res.json();
+            if (!data.success) return;
+
+            // 將選單先清空
+            Object.values(editUmpireSelectors).forEach(
+              (sel) => (sel.value = "")
+            );
+
+            data.umpires.forEach((u) => {
+              if (editUmpireSelectors[u.role]) {
+                editUmpireSelectors[u.role].value = u.umpire_id;
+              }
+            });
+          } catch (err) {
+            console.error(err);
+          }
+        });
+
+        // 修改比賽裁判 → POST
+        document
+          .getElementById("update-umpire")
+          .addEventListener("click", async () => {
+            const matchId = editMatchSelect.value;
+            if (!matchId) {
+              alert("請先選擇比賽");
+              return;
+            }
+
+            const umpires = Object.entries(editUmpireSelectors).map(
+              ([role, sel]) => ({
+                role,
+                umpire_id: sel.value || null,
+              })
+            );
+
+            try {
+              const res = await fetch("/admin/match/umpire/add", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ match_id: matchId, umpires }),
+              });
+              const data = await res.json();
+              if (data.success) {
+                alert("裁判名單已更新");
+              } else {
+                alert("更新失敗：" + data.error);
+              }
+            } catch (err) {
+              console.error(err);
+              alert("更新裁判發生錯誤");
+            }
+          });
+      });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const dateInput = document.getElementById("player-date");
+        const matchSelect = document.getElementById("player-match-select");
+
+        let homePlayers = [];
+        let awayPlayers = [];
+
+        const homeStarting = document.getElementById("home-starting");
+        const awayStarting = document.getElementById("away-starting");
+        const homeBench = document.getElementById("home-bench");
+        const awayBench = document.getElementById("away-bench");
+        const homeSP = document.getElementById("home-sp");
+        const awaySP = document.getElementById("away-sp");
+
+        // 選日期 → 載入比賽
+        dateInput.addEventListener("change", async () => {
+          const date = dateInput.value;
+          matchSelect.innerHTML = '<option value="">請選擇比賽</option>';
+          if (!date) return;
+          try {
+            const res = await fetch(`/admin/matches?date=${date}`);
+            const data = await res.json();
+            if (!data.success) return;
+            data.matches.forEach((m) => {
+              const opt = document.createElement("option");
+              opt.value = m.match_id;
+              opt.textContent = `${m.start_time || ""} ${m.home_team_name} vs ${
+                m.away_team_name
+              }`;
+              matchSelect.appendChild(opt);
+            });
+          } catch (err) {
+            console.error(err);
+          }
+        });
+
+        // 選比賽 → 載入球員
+        matchSelect.addEventListener("change", async () => {
+          const matchId = matchSelect.value;
+          if (!matchId) return;
+
+          try {
+            const res = await fetch(`/admin/match/players?match_id=${matchId}`);
+            const data = await res.json();
+            if (!data.success) return;
+
+            homePlayers = data.home_players;
+            awayPlayers = data.away_players;
+
+            renderStarting(homeStarting, homePlayers);
+            renderStarting(awayStarting, awayPlayers);
+            renderSP(homeSP, homePlayers);
+            renderSP(awaySP, awayPlayers);
+            renderBench(homeBench);
+            renderBench(awayBench);
+          } catch (err) {
+            console.error(err);
+          }
+        });
+
+        // 先發打序
+        function renderStarting(container, players) {
+          container.innerHTML = "";
+          for (let i = 1; i <= 9; i++) {
+            const div = document.createElement("div");
+            div.classList.add("starting-player");
+
+            const selectPlayer = document.createElement("select");
+            selectPlayer.innerHTML =
+              `<option value="">請選擇球員</option>` +
+              players
+                .map((p) => `<option value="${p.player_id}">${p.name}</option>`)
+                .join("");
+
+            const selectPos = document.createElement("select");
+            selectPos.innerHTML = `
+        <option value="">守備位置</option>
+        <option value="P">P</option>
+        <option value="C">C</option>
+        <option value="1B">1B</option>
+        <option value="2B">2B</option>
+        <option value="3B">3B</option>
+        <option value="SS">SS</option>
+        <option value="LF">LF</option>
+        <option value="CF">CF</option>
+        <option value="RF">RF</option>
+        <option value="DH">DH</option>
+      `;
+
+            div.innerHTML = `<span>${i}棒: </span>`;
+            div.appendChild(selectPlayer);
+            div.appendChild(selectPos);
+            container.appendChild(div);
+          }
+        }
+
+        // 先發投手
+        function renderSP(container, players) {
+          container.innerHTML =
+            `<option value="">請選擇投手</option>` +
+            players
+              .map((p) => `<option value="${p.player_id}">${p.name}</option>`)
+              .join("");
+        }
+
+        // 候補欄位（不含守備位置）
+        function renderBench(container, count = 5) {
+          container.innerHTML = "";
+          for (let i = 0; i < count; i++) {
+            addBenchRow(container);
+          }
+        }
+
+        function addBenchRow(container) {
+          const div = document.createElement("div");
+          div.classList.add("bench-player");
+          const team = container.id.startsWith("home")
+            ? homePlayers
+            : awayPlayers;
+
+          div.innerHTML = `
+      <select>
+        <option value="">請選擇球員</option>
+        ${team
+          .map((p) => `<option value="${p.player_id}">${p.name}</option>`)
+          .join("")}
+      </select>
+      <button class="remove-bench">X</button>
+    `;
+          container.appendChild(div);
+          div
+            .querySelector(".remove-bench")
+            .addEventListener("click", () => div.remove());
+        }
+
+        // 新增候補按鈕
+        document.querySelectorAll(".add-bench").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const team = btn.dataset.team === "home" ? homeBench : awayBench;
+            addBenchRow(team);
+          });
+        });
+
+        // 提交出賽名單
+        document
+          .getElementById("submit-match-player")
+          .addEventListener("click", async () => {
+            const matchId = matchSelect.value;
+            if (!matchId) {
+              alert("請先選擇比賽");
+              return;
+            }
+
+            // 收集先發球員
+            const gatherStarting = (container) => {
+              return Array.from(
+                container.querySelectorAll(".starting-player")
+              ).map((div, i) => ({
+                player_id: div.querySelector("select").value,
+                position: div.querySelectorAll("select")[1].value || null,
+                batting_order: i + 1,
+                is_starting: true,
+              }));
+            };
+
+            // 收集投手
+            const gatherSP = (select) => {
+              const val = select.value;
+              return val
+                ? [
+                    {
+                      player_id: val,
+                      position: "P",
+                      batting_order: null,
+                      is_starting: true,
+                    },
+                  ]
+                : [];
+            };
+
+            // 收集候補
+            const gatherBench = (container) => {
+              return Array.from(container.querySelectorAll(".bench-player"))
+                .map((div) => ({
+                  player_id: div.querySelector("select").value,
+                  position: null,
+                  batting_order: null,
+                  is_starting: false,
+                }))
+                .filter((p) => p.player_id);
+            };
+
+            // 檢查先發完整性
+            const checkStartingComplete = (starting, sp) => {
+              const missingPlayer = starting.some((p) => !p.player_id);
+              const missingSP = sp.length === 0;
+              return !missingPlayer && !missingSP;
+            };
+
+            const homeStartingPlayers = gatherStarting(homeStarting);
+            const awayStartingPlayers = gatherStarting(awayStarting);
+            const homeSPPlayer = gatherSP(homeSP);
+            const awaySPPlayer = gatherSP(awaySP);
+
+            if (!checkStartingComplete(homeStartingPlayers, homeSPPlayer)) {
+              alert("主隊先發球員或投手尚未完整填寫！");
+              return;
+            }
+
+            if (!checkStartingComplete(awayStartingPlayers, awaySPPlayer)) {
+              alert("客隊先發球員或投手尚未完整填寫！");
+              return;
+            }
+
+            const players = [
+              ...homeStartingPlayers,
+              ...homeSPPlayer,
+              ...gatherBench(homeBench),
+              ...awayStartingPlayers,
+              ...awaySPPlayer,
+              ...gatherBench(awayBench),
+            ];
+
+            try {
+              const res = await fetch("/admin/match/player/add", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ match_id: matchId, players }),
+              });
+              const data = await res.json();
+              if (data.success) alert("球員出賽名單已更新");
+              else alert("更新失敗：" + data.error);
+            } catch (err) {
+              console.error(err);
+              alert("更新出賽名單發生錯誤");
+            }
+          });
+      });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const editDateInput = document.getElementById("edit-player-date");
+        const editMatchSelect = document.getElementById(
+          "edit-player-match-select"
+        );
+
+        const editHomeStarting = document.getElementById("edit-home-starting");
+        const editAwayStarting = document.getElementById("edit-away-starting");
+        const editHomeBench = document.getElementById("edit-home-bench");
+        const editAwayBench = document.getElementById("edit-away-bench");
+        const editHomeSP = document.getElementById("edit-home-sp");
+        const editAwaySP = document.getElementById("edit-away-sp");
+
+        let editHomePlayers = [];
+        let editAwayPlayers = [];
+
+        // 選日期 → 載入比賽
+        editDateInput.addEventListener("change", async () => {
+          const date = editDateInput.value;
+          editMatchSelect.innerHTML = '<option value="">請選擇比賽</option>';
+          if (!date) return;
+
+          try {
+            const res = await fetch(`/admin/matches?date=${date}`);
+            const data = await res.json();
+            if (!data.success) return;
+
+            data.matches.forEach((m) => {
+              const opt = document.createElement("option");
+              opt.value = m.match_id;
+              opt.textContent = `${m.start_time || ""} ${m.home_team_name} vs ${
+                m.away_team_name
+              }`;
+              editMatchSelect.appendChild(opt);
+            });
+          } catch (err) {
+            console.error(err);
+          }
+        });
+
+        // 選比賽 → 載入現有出賽名單
+        editMatchSelect.addEventListener("change", async () => {
+          const matchId = editMatchSelect.value;
+          if (!matchId) return;
+
+          try {
+            const res = await fetch(`/admin/match/players?match_id=${matchId}`);
+            const data = await res.json();
+            if (!data.success) return;
+
+            editHomePlayers = data.home_players;
+            editAwayPlayers = data.away_players;
+
+            // 分類 match_players
+            const homeStarting = data.match_players.filter(
+              (p) =>
+                p.is_starting &&
+                p.position !== "P" &&
+                editHomePlayers.some((h) => h.player_id === p.player_id)
+            );
+            const awayStarting = data.match_players.filter(
+              (p) =>
+                p.is_starting &&
+                p.position !== "P" &&
+                editAwayPlayers.some((a) => a.player_id === p.player_id)
+            );
+            const homeSP = data.match_players.filter(
+              (p) =>
+                p.is_starting &&
+                p.position === "P" &&
+                editHomePlayers.some((h) => h.player_id === p.player_id)
+            );
+            const awaySP = data.match_players.filter(
+              (p) =>
+                p.is_starting &&
+                p.position === "P" &&
+                editAwayPlayers.some((a) => a.player_id === p.player_id)
+            );
+            const homeBench = data.match_players.filter(
+              (p) =>
+                !p.is_starting &&
+                editHomePlayers.some((h) => h.player_id === p.player_id)
+            );
+            const awayBench = data.match_players.filter(
+              (p) =>
+                !p.is_starting &&
+                editAwayPlayers.some((a) => a.player_id === p.player_id)
+            );
+
+            renderStarting(editHomeStarting, editHomePlayers, homeStarting);
+            renderStarting(editAwayStarting, editAwayPlayers, awayStarting);
+            renderSP(editHomeSP, editHomePlayers, homeSP);
+            renderSP(editAwaySP, editAwayPlayers, awaySP);
+            renderBench(editHomeBench, homeBench);
+            renderBench(editAwayBench, awayBench);
+          } catch (err) {
+            console.error(err);
+          }
+        });
+
+        // 先發球員
+        function renderStarting(container, players, startingPlayers = []) {
+          container.innerHTML = "";
+          for (let i = 1; i <= 9; i++) {
+            const div = document.createElement("div");
+            div.classList.add("starting-player");
+
+            const selectPlayer = document.createElement("select");
+            selectPlayer.innerHTML =
+              `<option value="">請選擇球員</option>` +
+              players
+                .map(
+                  (p) =>
+                    `<option value="${p.player_id}" ${
+                      startingPlayers[i - 1] &&
+                      startingPlayers[i - 1].player_id === p.player_id
+                        ? "selected"
+                        : ""
+                    }>${p.name}</option>`
+                )
+                .join("");
+
+            const selectPos = document.createElement("select");
+            const positions = [
+              "P",
+              "C",
+              "1B",
+              "2B",
+              "3B",
+              "SS",
+              "LF",
+              "CF",
+              "RF",
+              "DH",
+            ];
+            selectPos.innerHTML =
+              `<option value="">守備位置</option>` +
+              positions
+                .map(
+                  (pos) =>
+                    `<option value="${pos}" ${
+                      startingPlayers[i - 1] &&
+                      startingPlayers[i - 1].position === pos
+                        ? "selected"
+                        : ""
+                    }>${pos}</option>`
+                )
+                .join("");
+
+            div.innerHTML = `<span>${i}棒: </span>`;
+            div.appendChild(selectPlayer);
+            div.appendChild(selectPos);
+            container.appendChild(div);
+          }
+        }
+
+        // 先發投手
+        function renderSP(container, players, spPlayer = []) {
+          container.innerHTML =
+            `<option value="">請選擇投手</option>` +
+            players
+              .map(
+                (p) =>
+                  `<option value="${p.player_id}" ${
+                    spPlayer.length && spPlayer[0].player_id === p.player_id
+                      ? "selected"
+                      : ""
+                  }>${p.name}</option>`
+              )
+              .join("");
+        }
+
+        // 候補
+        function renderBench(container, benchPlayers = [], count = 5) {
+          container.innerHTML = "";
+          benchPlayers.forEach((p) => addBenchRow(container, p.player_id));
+          for (let i = benchPlayers.length; i < count; i++) {
+            addBenchRow(container);
+          }
+        }
+
+        function addBenchRow(container, playerId = "") {
+          const div = document.createElement("div");
+          div.classList.add("bench-player");
+          const team = container.id.startsWith("edit-home")
+            ? editHomePlayers
+            : editAwayPlayers;
+
+          div.innerHTML = `
+      <select>
+        <option value="">請選擇球員</option>
+        ${team
+          .map(
+            (p) =>
+              `<option value="${p.player_id}" ${
+                p.player_id === playerId ? "selected" : ""
+              }>${p.name}</option>`
+          )
+          .join("")}
+      </select>
+      <button class="remove-bench">X</button>
+    `;
+          container.appendChild(div);
+          div
+            .querySelector(".remove-bench")
+            .addEventListener("click", () => div.remove());
+        }
+
+        // 新增候補按鈕
+        document.querySelectorAll(".edit-add-bench").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const team =
+              btn.dataset.team === "home" ? editHomeBench : editAwayBench;
+            addBenchRow(team);
+          });
+        });
+
+        // 收集球員資料
+        function gatherStarting(container) {
+          return Array.from(container.querySelectorAll(".starting-player")).map(
+            (div, i) => ({
+              player_id: div.querySelectorAll("select")[0].value,
+              position: div.querySelectorAll("select")[1].value || null,
+              batting_order: i + 1,
+              is_starting: true,
+            })
+          );
+        }
+
+        function gatherSP(select) {
+          const val = select.value;
+          return val
+            ? [
+                {
+                  player_id: val,
+                  position: "P",
+                  batting_order: null,
+                  is_starting: true,
+                },
+              ]
+            : [];
+        }
+
+        function gatherBench(container) {
+          return Array.from(container.querySelectorAll(".bench-player"))
+            .map((div) => ({
+              player_id: div.querySelector("select").value,
+              position: null,
+              batting_order: null,
+              is_starting: false,
+            }))
+            .filter((p) => p.player_id);
+        }
+
+        // 提交修改
+        document
+          .getElementById("update-match-player")
+          .addEventListener("click", async () => {
+            const matchId = editMatchSelect.value;
+            if (!matchId) {
+              alert("請先選擇比賽");
+              return;
+            }
+
+            const homeStartingPlayers = gatherStarting(editHomeStarting);
+            const awayStartingPlayers = gatherStarting(editAwayStarting);
+            const homeSPPlayer = gatherSP(editHomeSP);
+            const awaySPPlayer = gatherSP(editAwaySP);
+
+            if (
+              homeStartingPlayers.some((p) => !p.player_id) ||
+              homeSPPlayer.length === 0
+            ) {
+              alert("主隊先發球員或投手尚未完整填寫！");
+              return;
+            }
+            if (
+              awayStartingPlayers.some((p) => !p.player_id) ||
+              awaySPPlayer.length === 0
+            ) {
+              alert("客隊先發球員或投手尚未完整填寫！");
+              return;
+            }
+
+            const players = [
+              ...homeStartingPlayers,
+              ...homeSPPlayer,
+              ...gatherBench(editHomeBench),
+              ...awayStartingPlayers,
+              ...awaySPPlayer,
+              ...gatherBench(editAwayBench),
+            ];
+
+            try {
+              const res = await fetch("/admin/match/player/add", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ match_id: matchId, players }),
+              });
+              const data = await res.json();
+              if (data.success) alert("球員出賽名單已更新");
+              else alert("更新失敗：" + data.error);
+            } catch (err) {
+              console.error(err);
+              alert("更新出賽名單發生錯誤");
+            }
+          });
+      });
 
       loadLeagues();
       loadTeams();

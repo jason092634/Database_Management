@@ -503,4 +503,160 @@ def edit_match():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
     
+@admin_bp.route("/admin/match/umpires", methods=["GET"])
+def get_match_umpires():
+    match_id = request.args.get("match_id")
+    if not match_id:
+        return jsonify({"success": False, "error": "缺少 match_id"})
 
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT mu.umpire_id, u.name, mu.role
+            FROM Match_Umpire mu
+            JOIN Umpire u ON mu.umpire_id = u.umpire_id
+            WHERE mu.match_id = %s
+        """, (match_id,))
+        rows = cur.fetchall()
+        umpires = [{"umpire_id": r[0], "name": r[1], "role": r[2]} for r in rows]
+        cur.close()
+        conn.close()
+        return jsonify({"success": True, "umpires": umpires})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@admin_bp.route("/admin/match/umpire/add", methods=["POST"])
+def add_match_umpire():
+    data = request.get_json()
+    match_id = data.get("match_id")
+    umpires = data.get("umpires")  # List of dict {role, umpire_id}
+
+    if not match_id or not umpires:
+        return jsonify({"success": False, "error": "缺少比賽或裁判資料"})
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        for u in umpires:
+            role = u.get("role")
+            umpire_id = u.get("umpire_id")
+
+            if umpire_id is None or umpire_id == "":
+                continue  # 可留空
+
+            # 如果該比賽該 role 已存在，先刪掉
+            cur.execute("""
+                DELETE FROM Match_Umpire
+                WHERE match_id = %s AND role = %s
+            """, (match_id, role))
+
+            # 新增
+            cur.execute("""
+                INSERT INTO Match_Umpire (match_id, umpire_id, role)
+                VALUES (%s, %s, %s)
+            """, (match_id, umpire_id, role))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"success": True, "message": "裁判名單已更新"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@admin_bp.route("/admin/match/players", methods=["GET"])
+def get_match_players():
+    match_id = request.args.get("match_id")
+    if not match_id:
+        return jsonify({"success": False, "error": "缺少 match_id"})
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # 先查這場比賽的主客隊 ID
+        cur.execute("SELECT home_team_id, away_team_id FROM Match WHERE match_id = %s", (match_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"success": False, "error": "找不到比賽"})
+        home_team_id, away_team_id = row
+
+        # 查主場球隊球員
+        cur.execute("SELECT player_id, name FROM Player WHERE team_id = %s ORDER BY number", (home_team_id,))
+        home_players = [{"player_id": r[0], "name": r[1]} for r in cur.fetchall()]
+
+        # 查客場球隊球員
+        cur.execute("SELECT player_id, name FROM Player WHERE team_id = %s ORDER BY number", (away_team_id,))
+        away_players = [{"player_id": r[0], "name": r[1]} for r in cur.fetchall()]
+
+        # 查這場比賽 Match_Player 的資料
+        cur.execute("""
+            SELECT record_id, player_id, position, batting_order, is_starting
+            FROM Match_Player
+            WHERE match_id = %s
+        """, (match_id,))
+        match_players = [{"record_id": r[0], "player_id": r[1], "position": r[2], "batting_order": r[3], "is_starting": r[4]} for r in cur.fetchall()]
+
+        cur.close()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "home_players": home_players,
+            "away_players": away_players,
+            "match_players": match_players
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@admin_bp.route("/admin/match/player/add", methods=["POST"])
+def add_match_player():
+    data = request.get_json()
+    match_id = data.get("match_id")
+    players = data.get("players")  # list of {player_id, position, batting_order, is_starting}
+
+    if not match_id or not players:
+        return jsonify({"success": False, "error": "缺少比賽或球員資料"})
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        for p in players:
+            player_id = p.get("player_id")
+            position = p.get("position")
+            batting_order = p.get("batting_order")
+            is_starting = p.get("is_starting", True)
+
+            if not player_id:
+                continue
+
+            # 檢查是否已有該球員在此比賽的紀錄
+            cur.execute("""
+                SELECT record_id FROM Match_Player
+                WHERE match_id = %s AND player_id = %s
+            """, (match_id, player_id))
+            row = cur.fetchone()
+
+            if row:
+                # 更新
+                cur.execute("""
+                    UPDATE Match_Player
+                    SET position = %s, batting_order = %s, is_starting = %s
+                    WHERE record_id = %s
+                """, (position, batting_order, is_starting, row[0]))
+            else:
+                # 新增
+                cur.execute("""
+                    INSERT INTO Match_Player (match_id, player_id, position, batting_order, is_starting)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (match_id, player_id, position, batting_order, is_starting))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"success": True, "message": "球員出賽名單已更新"})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
