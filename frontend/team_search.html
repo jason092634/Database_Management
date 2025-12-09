@@ -1,73 +1,187 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <title>球隊查詢系統</title>
+  <meta charset="UTF-8">
+  <title>球隊查詢系統</title>
+  <style>
+    body {
+      font-family: "Arial", sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 40px;
+    }
+
+    .container {
+      background: #ffffff;
+      width: 600px;
+      padding: 35px 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #333;
+    }
+
+    input[type="text"] {
+      width: calc(100% - 22px);
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+
+    .btn {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      cursor: pointer;
+      margin-right: 10px;
+      color: white;
+      background-color: #007bff;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background-color: #0056b3;
+    }
+
+    .gray-btn {
+      background-color: #6c757d;
+    }
+
+    .gray-btn:hover {
+      background-color: #545b62;
+    }
+
+    h2 {
+      margin-top: 25px;
+      color: #333;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 5px;
+    }
+
+    h3 {
+      margin-top: 20px;
+      margin-bottom: 10px;
+      color: #007bff;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 15px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f0f0f0;
+    }
+
+    #result p {
+      color: #555;
+    }
+  </style>
 </head>
 <body>
+  <div class="container">
     <h1>查詢球隊</h1>
+
     <input type="text" id="teamInput" placeholder="輸入球隊名稱">
-    <button onclick="searchTeam()">查詢</button>
-    <button onclick="location.href='dashboard.html'">回主畫面</button>
+    <button class="btn" onclick="searchTeam()">查詢</button>
+    <button class="btn gray-btn" onclick="location.href='dashboard.html'">回主畫面</button>
 
     <h2>結果：</h2>
     <div id="result"></div>
+  </div>
 
-    <script>
-        async function searchTeam() {
-            const name = document.getElementById("teamInput").value.trim();
-            const resultDiv = document.getElementById("result");
-            resultDiv.innerHTML = "";
+  <script>
+    async function searchTeam() {
+      const name = document.getElementById("teamInput").value.trim();
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "";
 
-            if (!name) {
-                resultDiv.innerHTML = "<p>請輸入球隊名稱</p>";
-                return;
+      if (!name) {
+        resultDiv.innerHTML = "<p>請輸入球隊名稱</p>";
+        return;
+      }
+
+      try {
+        const res = await fetch("http://127.0.0.1:5000/search/teams", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          const teams = data.result;
+
+          if (!teams || Object.keys(teams).length === 0) {
+            resultDiv.innerHTML = "<p>找不到符合的球隊</p>";
+            return;
+          }
+
+          for (const [teamName, players] of Object.entries(teams)) {
+            const teamSection = document.createElement("div");
+            teamSection.innerHTML = `<h3>${teamName}</h3>`;
+
+            if (!Array.isArray(players) || players.length === 0) {
+              teamSection.innerHTML += "<p>沒有球員</p>";
+            } else {
+              const table = document.createElement("table");
+
+              const thead = document.createElement("thead");
+              thead.innerHTML = `<tr>
+                <th>球員ID</th>
+                <th>球員名稱</th>
+                <th>背號</th>
+                <th>狀態</th>
+              </tr>`;
+              table.appendChild(thead);
+
+              const tbody = document.createElement("tbody");
+              players.forEach(p => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                  <td>${p.player_id}</td>
+                  <td>${p.player_name}</td>
+                  <td>${p.number ?? ''}</td>
+                  <td>${p.status}</td>
+                `;
+                tbody.appendChild(tr);
+              });
+
+              table.appendChild(tbody);
+              teamSection.appendChild(table);
             }
 
-            try {
-                const res = await fetch("http://127.0.0.1:5000/search/teams", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name })
-                });
+            resultDiv.appendChild(teamSection);
+          }
 
-                const data = await res.json();
-
-                if (data.success) {
-                    const teams = data.result;
-
-                    if (!teams || Object.keys(teams).length === 0) {
-                        resultDiv.innerHTML = "<p>找不到符合的球隊</p>";
-                        return;
-                    }
-
-                    for (const [teamName, players] of Object.entries(teams)) {
-                        const teamSection = document.createElement("div");
-                        teamSection.innerHTML = `<h3>${teamName}</h3>`;
-
-                        if (!Array.isArray(players) || players.length === 0) {
-                            teamSection.innerHTML += "<p>沒有球員</p>";
-                        } else {
-                            const ul = document.createElement("ul");
-                            players.forEach(p => {
-                                const li = document.createElement("li");
-                                li.textContent = `${p.player_id}：${p.player_name}`;
-                                ul.appendChild(li);
-                            });
-                            teamSection.appendChild(ul);
-                        }
-
-                        resultDiv.appendChild(teamSection);
-                    }
-
-                } else {
-                    resultDiv.innerHTML = "<p>查詢失敗：" + data.error + "</p>";
-                }
-
-            } catch (err) {
-                resultDiv.innerHTML = "<p>發生錯誤：" + err + "</p>";
-            }
+        } else {
+          resultDiv.innerHTML = "<p>查詢失敗：" + data.error + "</p>";
         }
-    </script>
+
+      } catch (err) {
+        resultDiv.innerHTML = "<p>發生錯誤：" + err + "</p>";
+      }
+    }
+  </script>
 </body>
 </html>

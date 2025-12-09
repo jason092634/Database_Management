@@ -1,32 +1,107 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
   <head>
     <meta charset="UTF-8" />
     <title>註冊帳號</title>
+
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        background-color: #f4f4f9;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        background: #ffffff;
+        width: 400px;
+        padding: 35px 45px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+
+      h1 {
+        margin-bottom: 25px;
+        color: #333;
+      }
+
+      label {
+        display: block;
+        text-align: left;
+        margin-top: 15px;
+        margin-bottom: 6px;
+        color: #444;
+        font-size: 15px;
+      }
+
+      input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 15px;
+        box-sizing: border-box;
+      }
+
+      .btn {
+        width: 100%;
+        padding: 12px;
+        margin-top: 20px;
+        background-color: #007bff;
+        border: none;
+        color: white;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .btn:hover {
+        background-color: #0056b3;
+      }
+
+      .back-btn {
+        background-color: #6c757d;
+      }
+
+      .back-btn:hover {
+        background-color: #545b62;
+      }
+
+      #message {
+        margin-top: 15px;
+        color: red;
+        min-height: 20px;
+      }
+    </style>
   </head>
+
   <body>
-    <h1>註冊新帳號</h1>
+    <div class="container">
+      <h1>註冊新帳號</h1>
 
-    <label>使用者名稱：</label>
-    <input type="text" id="username" /><br /><br />
+      <label>使用者名稱：</label>
+      <input type="text" id="username" />
 
-    <label>密碼：</label>
-    <input type="password" id="password" /><br /><br />
+      <label>密碼：</label>
+      <input type="password" id="password" />
 
-    <label>Email：</label>
-    <input type="email" id="email" /><br /><br />
+      <label>Email：</label>
+      <input type="email" id="email" />
 
-    <label>Admin 註冊密鑰（非必填）：</label>
-    <input
-      type="text"
-      id="admin-key"
-      placeholder="僅限 admin 註冊"
-    /><br /><br />
+      <label>Admin 註冊密鑰（非必填）：</label>
+      <input type="text" id="admin-key" placeholder="僅限 admin 註冊" />
 
-    <button onclick="register()">註冊</button>
-    <button onclick="location.href='/'">回首頁</button>
+      <button class="btn" onclick="register()">註冊</button>
+      <button class="btn back-btn" onclick="location.href='/'">回首頁</button>
 
-    <p id="message"></p>
+      <p id="message"></p>
+    </div>
 
     <script>
       async function hashPassword(password) {
@@ -34,7 +109,7 @@
         const data = encoder.encode(password);
         const hashBuffer = await crypto.subtle.digest("SHA-256", data);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+        return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
       }
 
       async function register() {
@@ -60,8 +135,8 @@
               username,
               password: hashedPassword,
               email,
-              admin_key: adminKey,
-            }),
+              admin_key: adminKey
+            })
           });
 
           const data = await res.json();

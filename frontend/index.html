@@ -1,14 +1,75 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
     <title>球隊查詢系統</title>
-</head>
-<body>
-    <h1>歡迎來到球隊查詢系統</h1>
-    <p>請先登入或註冊以使用完整功能</p>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        background-color: #f4f4f9;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
 
-    <button onclick="location.href='/register'">註冊</button>
-    <button onclick="location.href='/login'">登入</button>
-</body>
+      .container {
+        text-align: center;
+        background: #ffffff;
+        padding: 40px 50px;
+        border-radius: 12px;
+        width: 360px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        margin-bottom: 10px;
+        color: #333;
+      }
+
+      p {
+        margin-bottom: 25px;
+        color: #666;
+      }
+
+      .btn {
+        width: 100%;
+        padding: 12px;
+        margin: 8px 0;
+        background-color: #007bff;
+        border: none;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.2s;
+      }
+
+      .btn:hover {
+        background-color: #0056b3;
+      }
+
+      .login-btn {
+        background-color: #28a745;
+      }
+
+      .login-btn:hover {
+        background-color: #1e7e34;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>球隊查詢系統</h1>
+      <p>請登入或註冊以使用完整功能</p>
+
+      <button class="btn" onclick="location.href='/register'">註冊</button>
+      <button class="btn login-btn" onclick="location.href='/login'">
+        登入
+      </button>
+    </div>
+  </body>
 </html>

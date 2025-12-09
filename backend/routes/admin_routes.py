@@ -503,4 +503,577 @@ def edit_match():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
     
+@admin_bp.route("/admin/match/umpires", methods=["GET"])
+def get_match_umpires():
+    match_id = request.args.get("match_id")
+    if not match_id:
+        return jsonify({"success": False, "error": "缺少 match_id"})
 
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT mu.umpire_id, u.name, mu.role
+            FROM Match_Umpire mu
+            JOIN Umpire u ON mu.umpire_id = u.umpire_id
+            WHERE mu.match_id = %s
+        """, (match_id,))
+        rows = cur.fetchall()
+        umpires = [{"umpire_id": r[0], "name": r[1], "role": r[2]} for r in rows]
+        cur.close()
+        conn.close()
+        return jsonify({"success": True, "umpires": umpires})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@admin_bp.route("/admin/match/umpire/add", methods=["POST"])
+def add_match_umpire():
+    data = request.get_json()
+    match_id = data.get("match_id")
+    umpires = data.get("umpires")  # List of dict {role, umpire_id}
+
+    if not match_id or not umpires:
+        return jsonify({"success": False, "error": "缺少比賽或裁判資料"})
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        for u in umpires:
+            role = u.get("role")
+            umpire_id = u.get("umpire_id")
+
+            if umpire_id is None or umpire_id == "":
+                continue  # 可留空
+
+            # 如果該比賽該 role 已存在，先刪掉
+            cur.execute("""
+                DELETE FROM Match_Umpire
+                WHERE match_id = %s AND role = %s
+            """, (match_id, role))
+
+            # 新增
+            cur.execute("""
+                INSERT INTO Match_Umpire (match_id, umpire_id, role)
+                VALUES (%s, %s, %s)
+            """, (match_id, umpire_id, role))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"success": True, "message": "裁判名單已更新"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@admin_bp.route("/admin/match/players", methods=["GET"])
+def get_match_players():
+    match_id = request.args.get("match_id")
+    if not match_id:
+        return jsonify({"success": False, "error": "缺少 match_id"})
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # 先查這場比賽的主客隊 ID
+        cur.execute("SELECT home_team_id, away_team_id FROM Match WHERE match_id = %s", (match_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"success": False, "error": "找不到比賽"})
+        home_team_id, away_team_id = row
+
+        # 查主場球隊球員
+        cur.execute("SELECT player_id, name FROM Player WHERE team_id = %s ORDER BY number", (home_team_id,))
+        home_players = [{"player_id": r[0], "name": r[1]} for r in cur.fetchall()]
+
+        # 查客場球隊球員
+        cur.execute("SELECT player_id, name FROM Player WHERE team_id = %s ORDER BY number", (away_team_id,))
+        away_players = [{"player_id": r[0], "name": r[1]} for r in cur.fetchall()]
+
+        # 查這場比賽 Match_Player 的資料
+        cur.execute("""
+            SELECT record_id, player_id, position, batting_order, is_starting
+            FROM Match_Player
+            WHERE match_id = %s
+        """, (match_id,))
+        match_players = [{"record_id": r[0], "player_id": r[1], "position": r[2], "batting_order": r[3], "is_starting": r[4]} for r in cur.fetchall()]
+
+        cur.close()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "home_players": home_players,
+            "away_players": away_players,
+            "match_players": match_players
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@admin_bp.route("/admin/match/player/add", methods=["POST"])
+def add_match_player():
+    data = request.get_json()
+    match_id = data.get("match_id")
+    players = data.get("players")  # list of {player_id, position, batting_order, is_starting}
+
+    if not match_id or not players:
+        return jsonify({"success": False, "error": "缺少比賽或球員資料"})
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        for p in players:
+            player_id = p.get("player_id")
+            position = p.get("position")
+            batting_order = p.get("batting_order")
+            is_starting = p.get("is_starting", True)
+
+            if not player_id:
+                continue
+
+            # 檢查是否已有該球員在此比賽的紀錄
+            cur.execute("""
+                SELECT record_id FROM Match_Player
+                WHERE match_id = %s AND player_id = %s
+            """, (match_id, player_id))
+            row = cur.fetchone()
+
+            if row:
+                # 更新
+                cur.execute("""
+                    UPDATE Match_Player
+                    SET position = %s, batting_order = %s, is_starting = %s
+                    WHERE record_id = %s
+                """, (position, batting_order, is_starting, row[0]))
+            else:
+                # 新增
+                cur.execute("""
+                    INSERT INTO Match_Player (match_id, player_id, position, batting_order, is_starting)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (match_id, player_id, position, batting_order, is_starting))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"success": True, "message": "球員出賽名單已更新"})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@admin_bp.route("/admin/match/batting", methods=["GET"])
+def get_match_batting():
+    match_id = request.args.get("match_id")
+    if not match_id:
+        return jsonify({"success": False, "error": "缺少 match_id"})
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("SELECT home_team_id, away_team_id FROM Match WHERE match_id = %s", (match_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"success": False, "error": "找不到比賽"})
+        home_team_id, away_team_id = row
+
+        cur.execute("""
+            SELECT mp.record_id, mp.player_id, p.name, mp.position, mp.batting_order, mp.is_starting,
+                   p.team_id,
+                   br.at_bats, br.plate_appearance, br.hits, br.doubles, br.triples, br.home_runs,
+                   br.strikeouts, br.walks, br.hit_by_pitch, br.sacrifice_flies, br.double_play, br.triple_play,
+                   br.rbis, br.runs, br.stolen_bases, br.caught_stealing, br.remarks
+            FROM Match_Player mp
+            LEFT JOIN Player p ON mp.player_id = p.player_id
+            LEFT JOIN BattingRecord br ON mp.record_id = br.record_id
+            WHERE mp.match_id = %s
+            ORDER BY mp.batting_order, mp.player_id
+        """, (match_id,))
+
+        home_players = []
+        away_players = []
+
+        for r in cur.fetchall():
+            player_data = {
+                "player_id": r[1],
+                "name": r[2],
+                "batting_record": {   # ⚡ 改為 batting_record
+                    "record_id": r[0],  # ⚡ 使用 record_id
+                    "position": r[3],
+                    "batting_order": r[4],
+                    "is_starting": r[5],
+                    "at_bats": r[7] or 0,
+                    "plate_appearance": r[8] or 0,
+                    "hits": r[9] or 0,
+                    "doubles": r[10] or 0,
+                    "triples": r[11] or 0,
+                    "home_runs": r[12] or 0,
+                    "strikeouts": r[13] or 0,
+                    "walks": r[14] or 0,
+                    "hit_by_pitch": r[15] or 0,
+                    "sacrifice_flies": r[16] or 0,
+                    "double_play": r[17] or 0,
+                    "triple_play": r[18] or 0,
+                    "rbis": r[19] or 0,
+                    "runs": r[20] or 0,
+                    "stolen_bases": r[21] or 0,
+                    "caught_stealing": r[22] or 0,
+                    "remarks": r[23] or ""
+                }
+            }
+
+            if r[6] == home_team_id:
+                home_players.append(player_data)
+            else:
+                away_players.append(player_data)
+
+        cur.close()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "home_players": home_players,
+            "away_players": away_players
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@admin_bp.route("/admin/match/batting/add", methods=["POST"])
+def add_match_batting():
+    data = request.get_json()
+    records = data.get("records")
+
+    if not records or len(records) == 0:
+        return jsonify({"success": False, "error": "沒有有效的打擊數據可以更新"})
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        for r in records:
+            record_id = r.get("record_id")
+            if not record_id:
+                continue
+
+            at_bats = r.get("at_bats", 0)
+            plate_appearance = r.get("plate_appearance", 0)
+            hits = r.get("hits", 0)
+            doubles = r.get("doubles", 0)
+            triples = r.get("triples", 0)
+            home_runs = r.get("home_runs", 0)
+            strikeouts = r.get("strikeouts", 0)
+            walks = r.get("walks", 0)
+            hit_by_pitch = r.get("hit_by_pitch", 0)
+            sacrifice_flies = r.get("sacrifice_flies", 0)
+            double_play = r.get("double_play", 0)
+            triple_play = r.get("triple_play", 0)
+            rbis = r.get("rbis", 0)
+            runs = r.get("runs", 0)
+            stolen_bases = r.get("stolen_bases", 0)
+            caught_stealing = r.get("caught_stealing", 0)
+            remarks = r.get("remarks", "")
+
+            # 檢查是否已存在
+            cur.execute("SELECT 1 FROM BattingRecord WHERE record_id = %s", (record_id,))
+            exists = cur.fetchone()
+
+            if exists:
+                cur.execute("""
+                    UPDATE BattingRecord
+                    SET at_bats=%s, plate_appearance=%s, hits=%s, doubles=%s, triples=%s,
+                        home_runs=%s, strikeouts=%s, walks=%s, hit_by_pitch=%s, sacrifice_flies=%s,
+                        double_play=%s, triple_play=%s, rbis=%s, runs=%s, stolen_bases=%s,
+                        caught_stealing=%s, remarks=%s
+                    WHERE record_id=%s
+                """, (at_bats, plate_appearance, hits, doubles, triples, home_runs, strikeouts, walks,
+                      hit_by_pitch, sacrifice_flies, double_play, triple_play, rbis, runs, stolen_bases,
+                      caught_stealing, remarks, record_id))
+            else:
+                cur.execute("""
+                    INSERT INTO BattingRecord (
+                        record_id, at_bats, plate_appearance, hits, doubles, triples, home_runs,
+                        strikeouts, walks, hit_by_pitch, sacrifice_flies, double_play, triple_play,
+                        rbis, runs, stolen_bases, caught_stealing, remarks
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (record_id, at_bats, plate_appearance, hits, doubles, triples, home_runs,
+                      strikeouts, walks, hit_by_pitch, sacrifice_flies, double_play, triple_play,
+                      rbis, runs, stolen_bases, caught_stealing, remarks))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"success": True, "message": "打擊數據已更新"})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@admin_bp.route("/admin/match/pitching", methods=["GET"])
+def get_match_pitching():
+    match_id = request.args.get("match_id")
+    if not match_id:
+        return jsonify({"success": False, "error": "缺少 match_id"})
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # 取得主客隊
+        cur.execute("SELECT home_team_id, away_team_id FROM Match WHERE match_id = %s", (match_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"success": False, "error": "找不到比賽"})
+        home_team_id, away_team_id = row
+
+        # 查球員及投球紀錄
+        cur.execute("""
+            SELECT mp.record_id, mp.player_id, p.name, mp.position, mp.is_starting,
+                   p.team_id,
+                   pr.pitching_role, pr.pitch_result, pr.innings_pitched, pr.pitches, pr.batters_faced,
+                   pr.strikeouts, pr.walks, pr.hit_batters, pr.hits_allowed, pr.singles, pr.doubles, pr.triples,
+                   pr.home_runs, pr.runs_allowed, pr.earned_runs, pr.fly_outs, pr.ground_outs, pr.line_outs,
+                   pr.stolen_bases_allowed, pr.wild_pitches, pr.balks, pr.remarks
+            FROM Match_Player mp
+            LEFT JOIN Player p ON mp.player_id = p.player_id
+            LEFT JOIN PitchingRecord pr ON mp.record_id = pr.record_id
+            WHERE mp.match_id = %s
+            ORDER BY mp.position, mp.player_id
+        """, (match_id,))
+
+        home_players = []
+        away_players = []
+
+        for r in cur.fetchall():
+            player_data = {
+                "player_id": r[1],
+                "name": r[2],
+                "pitching_record": {
+                    "record_id": r[0],
+                    "position": r[3],
+                    "is_starting": r[4],
+                    "pitching_role": r[6] or "",
+                    "pitch_result": r[7] or "",
+                    "innings_pitched": float(r[8] or 0),
+                    "pitches": r[9] or 0,
+                    "batters_faced": r[10] or 0,
+                    "strikeouts": r[11] or 0,
+                    "walks": r[12] or 0,
+                    "hit_batters": r[13] or 0,
+                    "hits_allowed": r[14] or 0,
+                    "singles": r[15] or 0,
+                    "doubles": r[16] or 0,
+                    "triples": r[17] or 0,
+                    "home_runs": r[18] or 0,
+                    "runs_allowed": r[19] or 0,
+                    "earned_runs": r[20] or 0,
+                    "fly_outs": r[21] or 0,
+                    "ground_outs": r[22] or 0,
+                    "line_outs": r[23] or 0,
+                    "stolen_bases_allowed": r[24] or 0,
+                    "wild_pitches": r[25] or 0,
+                    "balks": r[26] or 0,
+                    "remarks": r[27] or ""
+                }
+            }
+
+            if r[5] == home_team_id:
+                home_players.append(player_data)
+            else:
+                away_players.append(player_data)
+
+        cur.close()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "home_players": home_players,
+            "away_players": away_players
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@admin_bp.route("/admin/match/pitching/add", methods=["POST"])
+def add_match_pitching():
+    data = request.get_json()
+    records = data.get("records")
+
+    if not records or len(records) == 0:
+        return jsonify({"success": False, "error": "沒有有效的投球數據可以更新"})
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        for r in records:
+            record_id = r.get("record_id")
+            if not record_id:
+                continue
+
+            pitching_role = r.get("pitching_role", "")
+            pitch_result = r.get("pitch_result", "")
+            innings_pitched = r.get("innings_pitched", 0)
+            pitches = r.get("pitches", 0)
+            batters_faced = r.get("batters_faced", 0)
+            strikeouts = r.get("strikeouts", 0)
+            walks = r.get("walks", 0)
+            hit_batters = r.get("hit_batters", 0)
+            hits_allowed = r.get("hits_allowed", 0)
+            singles = r.get("singles", 0)
+            doubles = r.get("doubles", 0)
+            triples = r.get("triples", 0)
+            home_runs = r.get("home_runs", 0)
+            runs_allowed = r.get("runs_allowed", 0)
+            earned_runs = r.get("earned_runs", 0)
+            fly_outs = r.get("fly_outs", 0)
+            ground_outs = r.get("ground_outs", 0)
+            line_outs = r.get("line_outs", 0)
+            stolen_bases_allowed = r.get("stolen_bases_allowed", 0)
+            wild_pitches = r.get("wild_pitches", 0)
+            balks = r.get("balks", 0)
+            remarks = r.get("remarks", "")
+
+            # 檢查是否已存在
+            cur.execute("SELECT 1 FROM PitchingRecord WHERE record_id = %s", (record_id,))
+            exists = cur.fetchone()
+
+            if exists:
+                cur.execute("""
+                    UPDATE PitchingRecord
+                    SET pitching_role=%s, pitch_result=%s, innings_pitched=%s, pitches=%s, batters_faced=%s,
+                        strikeouts=%s, walks=%s, hit_batters=%s, hits_allowed=%s, singles=%s, doubles=%s,
+                        triples=%s, home_runs=%s, runs_allowed=%s, earned_runs=%s, fly_outs=%s, ground_outs=%s,
+                        line_outs=%s, stolen_bases_allowed=%s, wild_pitches=%s, balks=%s, remarks=%s
+                    WHERE record_id=%s
+                """, (pitching_role, pitch_result, innings_pitched, pitches, batters_faced,
+                      strikeouts, walks, hit_batters, hits_allowed, singles, doubles,
+                      triples, home_runs, runs_allowed, earned_runs, fly_outs, ground_outs,
+                      line_outs, stolen_bases_allowed, wild_pitches, balks, remarks, record_id))
+            else:
+                cur.execute("""
+                    INSERT INTO PitchingRecord (
+                        record_id, pitching_role, pitch_result, innings_pitched, pitches, batters_faced,
+                        strikeouts, walks, hit_batters, hits_allowed, singles, doubles, triples,
+                        home_runs, runs_allowed, earned_runs, fly_outs, ground_outs, line_outs,
+                        stolen_bases_allowed, wild_pitches, balks, remarks
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (record_id, pitching_role, pitch_result, innings_pitched, pitches, batters_faced,
+                      strikeouts, walks, hit_batters, hits_allowed, singles, doubles, triples,
+                      home_runs, runs_allowed, earned_runs, fly_outs, ground_outs, line_outs,
+                      stolen_bases_allowed, wild_pitches, balks, remarks))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"success": True, "message": "投球數據已更新"})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@admin_bp.route("/admin/match/fielding", methods=["GET"])
+def get_match_fielding():
+    match_id = request.args.get("match_id")
+    if not match_id:
+        return jsonify({"success": False, "error": "缺少 match_id"})
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # 取得主客隊
+        cur.execute("SELECT home_team_id, away_team_id FROM Match WHERE match_id = %s", (match_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"success": False, "error": "找不到比賽"})
+        home_team_id, away_team_id = row
+
+        # 查球員及守備紀錄
+        cur.execute("""
+            SELECT mp.record_id, mp.player_id, p.name, mp.position, mp.is_starting, p.team_id,
+                   fr.fielding_chances, fr.putouts, fr.assists, fr.errors, fr.remarks
+            FROM Match_Player mp
+            LEFT JOIN Player p ON mp.player_id = p.player_id
+            LEFT JOIN FieldingRecord fr ON mp.record_id = fr.record_id
+            WHERE mp.match_id = %s
+            ORDER BY mp.position, mp.player_id
+        """, (match_id,))
+
+        home_players = []
+        away_players = []
+
+        for r in cur.fetchall():
+            player_data = {
+                "player_id": r[1],
+                "name": r[2],
+                "fielding_record": {
+                    "record_id": r[0],
+                    "position": r[3],
+                    "is_starting": r[4],
+                    "fielding_chances": r[6] or 0,
+                    "putouts": r[7] or 0,
+                    "assists": r[8] or 0,
+                    "errors": r[9] or 0,
+                    "remarks": r[10] or ""
+                }
+            }
+
+            if r[5] == home_team_id:
+                home_players.append(player_data)
+            else:
+                away_players.append(player_data)
+
+        cur.close()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "home_players": home_players,
+            "away_players": away_players
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@admin_bp.route("/admin/match/fielding/add", methods=["POST"])
+def add_match_fielding():
+    data = request.get_json()
+    records = data.get("records")
+
+    if not records or len(records) == 0:
+        return jsonify({"success": False, "error": "沒有有效的守備數據可以更新"})
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        for r in records:
+            record_id = r.get("record_id")
+            if not record_id:
+                continue
+
+            fielding_chances = r.get("fielding_chances", 0)
+            putouts = r.get("putouts", 0)
+            assists = r.get("assists", 0)
+            errors = r.get("errors", 0)
+            remarks = r.get("remarks", "")
+
+            # 檢查是否已存在
+            cur.execute("SELECT 1 FROM FieldingRecord WHERE record_id = %s", (record_id,))
+            exists = cur.fetchone()
+
+            if exists:
+                cur.execute("""
+                    UPDATE FieldingRecord
+                    SET fielding_chances=%s, putouts=%s, assists=%s, errors=%s, remarks=%s
+                    WHERE record_id=%s
+                """, (fielding_chances, putouts, assists, errors, remarks, record_id))
+            else:
+                cur.execute("""
+                    INSERT INTO FieldingRecord (record_id, fielding_chances, putouts, assists, errors, remarks)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (record_id, fielding_chances, putouts, assists, errors, remarks))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"success": True, "message": "守備數據已更新"})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})

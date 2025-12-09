@@ -16,18 +16,20 @@ def search_teams():
         conn = get_connection()
         cur = conn.cursor()
 
+        # SQL 加入 number 與 status
         query = """
-            SELECT t.team_id, t.team_name, p.player_id, p.name
+            SELECT t.team_id, t.team_name, p.player_id, p.name, p.number, p.status
             FROM Team t
             LEFT JOIN Player p ON t.team_id = p.team_id
             WHERE t.team_name ILIKE %s
             ORDER BY t.team_id, p.player_id;
         """
+
         cur.execute(query, (f"%{keyword}%",))
         rows = cur.fetchall()
         conn.close()
 
-        # Redis increment using team_id
+        # Redis 計次
         team_ids = set()
         for row in rows:
             team_id = str(row[0])
@@ -35,13 +37,20 @@ def search_teams():
                 current_app.redis.zincrby("ranking:team", 1, team_id)
                 team_ids.add(team_id)
 
+        # 整理回傳
         result = {}
-        for team_id, team_name, player_id, player_name in rows:
+        for team_id, team_name, player_id, player_name, number, status in rows:
             if team_name not in result:
                 result[team_name] = []
             if player_id:
-                result[team_name].append({"player_id": player_id, "player_name": player_name})
+                result[team_name].append({
+                    "player_id": player_id,
+                    "player_name": player_name,
+                    "number": number,
+                    "status": status
+                })
 
         return jsonify({"success": True, "result": result})
+
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
