@@ -67,6 +67,11 @@
         padding: 6px 12px;
         cursor: pointer;
       }
+      #batting-table input {
+        width: 60px;
+        padding: 2px;
+        text-align: center;
+      }
     </style>
   </head>
   <body>
@@ -79,6 +84,7 @@
       <button onclick="showTab('match')">比賽管理</button>
       <button onclick="showTab('match_umpire')">比賽裁判管理</button>
       <button onclick="showTab('match_player')">比賽球員管理</button>
+      <button onclick="showTab('batting_record')">球員打擊數據管理</button>
       <button onclick="location.href='dashboard.html'">回主畫面</button>
     </div>
 
@@ -570,6 +576,68 @@
 
         <button id="update-match-player">修改出賽名單</button>
       </div>
+    </div>
+
+    <!-- BattingRecord Tab -->
+    <div id="batting_record" class="tab-content">
+      <h2>球員打擊數據管理</h2>
+
+      <!-- 選擇日期 -->
+      <div>
+        <label>日期：</label>
+        <input type="date" id="batting-date" />
+      </div>
+
+      <!-- 選擇比賽 -->
+      <div>
+        <label>比賽：</label>
+        <select id="batting-match-select">
+          <option value="">請先選擇日期</option>
+        </select>
+      </div>
+
+      <!-- 球員打擊數據表格 -->
+      <div style="margin-top: 20px; overflow-x: auto">
+        <table
+          id="batting-table"
+          border="1"
+          cellpadding="5"
+          cellspacing="0"
+          style="border-collapse: collapse; width: 100%"
+        >
+          <thead>
+            <tr>
+              <th>球員姓名</th>
+              <th>打席數</th>
+              <th>打數</th>
+              <th>安打</th>
+              <th>二壘打</th>
+              <th>三壘打</th>
+              <th>全壘打</th>
+              <th>三振</th>
+              <th>保送</th>
+              <th>觸身球</th>
+              <th>犧牲飛球</th>
+              <th>雙殺打</th>
+              <th>三殺打</th>
+              <th>打點</th>
+              <th>得分</th>
+              <th>盜壘</th>
+              <th>盜壘失敗</th>
+            </tr>
+          </thead>
+          <tbody id="batting-body">
+            <!-- JS 會根據 match_player 填充球員行，每個欄位都是 input -->
+          </tbody>
+        </table>
+      </div>
+
+      <button
+        id="save-batting-record"
+        style="margin-top: 15px; padding: 8px 16px"
+      >
+        儲存打擊數據
+      </button>
     </div>
 
     <script>
@@ -2128,6 +2196,166 @@
               alert("更新出賽名單發生錯誤");
             }
           });
+      });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const dateInput = document.getElementById("batting-date");
+        const matchSelect = document.getElementById("batting-match-select");
+        const battingBody = document.getElementById("batting-body");
+        const saveBtn = document.getElementById("save-batting-record");
+
+        // 選日期 → 載入比賽
+        dateInput.addEventListener("change", async () => {
+          const date = dateInput.value;
+          matchSelect.innerHTML = '<option value="">請選擇比賽</option>';
+          battingBody.innerHTML = "";
+          if (!date) return;
+
+          try {
+            const res = await fetch(`/admin/matches?date=${date}`);
+            const data = await res.json();
+            if (!data.success) return;
+
+            data.matches.forEach((m) => {
+              const opt = document.createElement("option");
+              opt.value = m.match_id;
+              opt.textContent = `${m.start_time || ""} ${m.home_team_name} vs ${
+                m.away_team_name
+              }`;
+              matchSelect.appendChild(opt);
+            });
+          } catch (err) {
+            console.error(err);
+            alert("取得比賽列表失敗");
+          }
+        });
+
+        // 選比賽 → 載入球員打擊紀錄
+        matchSelect.addEventListener("change", async () => {
+          const matchId = matchSelect.value;
+          if (!matchId) {
+            battingBody.innerHTML = "";
+            return;
+          }
+
+          try {
+            const res = await fetch(`/admin/match/batting?match_id=${matchId}`);
+            const data = await res.json();
+            if (!data.success) return;
+
+            battingBody.innerHTML = ""; // 清空表格
+
+            // ===== 主場球員 =====
+            if (data.home_players?.length) {
+              const homeTitle = document.createElement("tr");
+              homeTitle.innerHTML = `<td colspan="17" style="font-weight:bold; background:#f0f0f0; text-align:center;">主場球員</td>`;
+              battingBody.appendChild(homeTitle);
+
+              data.home_players.forEach((p) => {
+                const tr = document.createElement("tr");
+                tr.dataset.playerId = p.player_id;
+                tr.dataset.recordId = p.batting_record?.record_id || ""; // ⚡ 使用 record_id
+                tr.innerHTML = generatePlayerRowHTML(p);
+                battingBody.appendChild(tr);
+              });
+            }
+
+            // ===== 客場球員 =====
+            if (data.away_players?.length) {
+              const awayTitle = document.createElement("tr");
+              awayTitle.innerHTML = `<td colspan="17" style="font-weight:bold; background:#e0f7ff; text-align:center;">客場球員</td>`;
+              battingBody.appendChild(awayTitle);
+
+              data.away_players.forEach((p) => {
+                const tr = document.createElement("tr");
+                tr.dataset.playerId = p.player_id;
+                tr.dataset.recordId = p.batting_record?.record_id || ""; // ⚡ 使用 record_id
+                tr.innerHTML = generatePlayerRowHTML(p);
+                battingBody.appendChild(tr);
+              });
+            }
+          } catch (err) {
+            console.error(err);
+            alert("取得球員打擊資料失敗");
+          }
+        });
+
+        // 儲存打擊數據
+        saveBtn.addEventListener("click", async () => {
+          const matchId = matchSelect.value;
+          if (!matchId) return alert("請先選擇比賽");
+
+          const records = Array.from(battingBody.querySelectorAll("tr"))
+            .map((tr) => {
+              const inputs = tr.querySelectorAll("input");
+              if (!inputs.length) return null; // 跳過分隔列
+              const id = parseInt(tr.dataset.recordId); // ⚡ 使用 record_id
+              if (isNaN(id)) return null;
+
+              return {
+                record_id: id, // ⚡ 用 record_id 更新/新增
+                plate_appearance: parseInt(inputs[0].value) || 0,
+                at_bats: parseInt(inputs[1].value) || 0,
+                hits: parseInt(inputs[2].value) || 0,
+                doubles: parseInt(inputs[3].value) || 0,
+                triples: parseInt(inputs[4].value) || 0,
+                home_runs: parseInt(inputs[5].value) || 0,
+                strikeouts: parseInt(inputs[6].value) || 0,
+                walks: parseInt(inputs[7].value) || 0,
+                hit_by_pitch: parseInt(inputs[8].value) || 0,
+                sacrifice_flies: parseInt(inputs[9].value) || 0,
+                double_play: parseInt(inputs[10].value) || 0,
+                triple_play: parseInt(inputs[11].value) || 0,
+                rbis: parseInt(inputs[12].value) || 0,
+                runs: parseInt(inputs[13].value) || 0,
+                stolen_bases: parseInt(inputs[14].value) || 0,
+                caught_stealing: parseInt(inputs[15].value) || 0,
+              };
+            })
+            .filter((r) => r !== null);
+
+          if (records.length === 0) {
+            return alert("沒有有效的打擊數據可以更新");
+          }
+
+          try {
+            const res = await fetch(`/admin/match/batting/add`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ match_id: matchId, records }),
+            });
+            const data = await res.json();
+            if (data.success) alert("打擊數據已更新");
+            else alert("更新失敗：" + data.error);
+          } catch (err) {
+            console.error(err);
+            alert("更新打擊數據發生錯誤");
+          }
+        });
+
+        // 生成球員列 HTML
+        function generatePlayerRowHTML(p) {
+          const r = p.batting_record || {}; // ⚡ 使用 batting_record
+          return `
+            <td>${p.name}</td>
+            <td><input type="number" value="${r.plate_appearance ?? 0}" /></td>
+            <td><input type="number" value="${r.at_bats ?? 0}" /></td>
+            <td><input type="number" value="${r.hits ?? 0}" /></td>
+            <td><input type="number" value="${r.doubles ?? 0}" /></td>
+            <td><input type="number" value="${r.triples ?? 0}" /></td>
+            <td><input type="number" value="${r.home_runs ?? 0}" /></td>
+            <td><input type="number" value="${r.strikeouts ?? 0}" /></td>
+            <td><input type="number" value="${r.walks ?? 0}" /></td>
+            <td><input type="number" value="${r.hit_by_pitch ?? 0}" /></td>
+            <td><input type="number" value="${r.sacrifice_flies ?? 0}" /></td>
+            <td><input type="number" value="${r.double_play ?? 0}" /></td>
+            <td><input type="number" value="${r.triple_play ?? 0}" /></td>
+            <td><input type="number" value="${r.rbis ?? 0}" /></td>
+            <td><input type="number" value="${r.runs ?? 0}" /></td>
+            <td><input type="number" value="${r.stolen_bases ?? 0}" /></td>
+            <td><input type="number" value="${r.caught_stealing ?? 0}" /></td>
+        `;
+        }
       });
 
       loadLeagues();

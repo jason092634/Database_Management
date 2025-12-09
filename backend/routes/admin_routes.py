@@ -660,3 +660,150 @@ def add_match_player():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+@admin_bp.route("/admin/match/batting", methods=["GET"])
+def get_match_batting():
+    match_id = request.args.get("match_id")
+    if not match_id:
+        return jsonify({"success": False, "error": "缺少 match_id"})
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("SELECT home_team_id, away_team_id FROM Match WHERE match_id = %s", (match_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"success": False, "error": "找不到比賽"})
+        home_team_id, away_team_id = row
+
+        cur.execute("""
+            SELECT mp.record_id, mp.player_id, p.name, mp.position, mp.batting_order, mp.is_starting,
+                   p.team_id,
+                   br.at_bats, br.plate_appearance, br.hits, br.doubles, br.triples, br.home_runs,
+                   br.strikeouts, br.walks, br.hit_by_pitch, br.sacrifice_flies, br.double_play, br.triple_play,
+                   br.rbis, br.runs, br.stolen_bases, br.caught_stealing, br.remarks
+            FROM Match_Player mp
+            LEFT JOIN Player p ON mp.player_id = p.player_id
+            LEFT JOIN BattingRecord br ON mp.record_id = br.record_id
+            WHERE mp.match_id = %s
+            ORDER BY mp.batting_order, mp.player_id
+        """, (match_id,))
+
+        home_players = []
+        away_players = []
+
+        for r in cur.fetchall():
+            player_data = {
+                "player_id": r[1],
+                "name": r[2],
+                "batting_record": {   # ⚡ 改為 batting_record
+                    "record_id": r[0],  # ⚡ 使用 record_id
+                    "position": r[3],
+                    "batting_order": r[4],
+                    "is_starting": r[5],
+                    "at_bats": r[7] or 0,
+                    "plate_appearance": r[8] or 0,
+                    "hits": r[9] or 0,
+                    "doubles": r[10] or 0,
+                    "triples": r[11] or 0,
+                    "home_runs": r[12] or 0,
+                    "strikeouts": r[13] or 0,
+                    "walks": r[14] or 0,
+                    "hit_by_pitch": r[15] or 0,
+                    "sacrifice_flies": r[16] or 0,
+                    "double_play": r[17] or 0,
+                    "triple_play": r[18] or 0,
+                    "rbis": r[19] or 0,
+                    "runs": r[20] or 0,
+                    "stolen_bases": r[21] or 0,
+                    "caught_stealing": r[22] or 0,
+                    "remarks": r[23] or ""
+                }
+            }
+
+            if r[6] == home_team_id:
+                home_players.append(player_data)
+            else:
+                away_players.append(player_data)
+
+        cur.close()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "home_players": home_players,
+            "away_players": away_players
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@admin_bp.route("/admin/match/batting/add", methods=["POST"])
+def add_match_batting():
+    data = request.get_json()
+    records = data.get("records")
+
+    if not records or len(records) == 0:
+        return jsonify({"success": False, "error": "沒有有效的打擊數據可以更新"})
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        for r in records:
+            record_id = r.get("record_id")
+            if not record_id:
+                continue
+
+            at_bats = r.get("at_bats", 0)
+            plate_appearance = r.get("plate_appearance", 0)
+            hits = r.get("hits", 0)
+            doubles = r.get("doubles", 0)
+            triples = r.get("triples", 0)
+            home_runs = r.get("home_runs", 0)
+            strikeouts = r.get("strikeouts", 0)
+            walks = r.get("walks", 0)
+            hit_by_pitch = r.get("hit_by_pitch", 0)
+            sacrifice_flies = r.get("sacrifice_flies", 0)
+            double_play = r.get("double_play", 0)
+            triple_play = r.get("triple_play", 0)
+            rbis = r.get("rbis", 0)
+            runs = r.get("runs", 0)
+            stolen_bases = r.get("stolen_bases", 0)
+            caught_stealing = r.get("caught_stealing", 0)
+            remarks = r.get("remarks", "")
+
+            # 檢查是否已存在
+            cur.execute("SELECT 1 FROM BattingRecord WHERE record_id = %s", (record_id,))
+            exists = cur.fetchone()
+
+            if exists:
+                cur.execute("""
+                    UPDATE BattingRecord
+                    SET at_bats=%s, plate_appearance=%s, hits=%s, doubles=%s, triples=%s,
+                        home_runs=%s, strikeouts=%s, walks=%s, hit_by_pitch=%s, sacrifice_flies=%s,
+                        double_play=%s, triple_play=%s, rbis=%s, runs=%s, stolen_bases=%s,
+                        caught_stealing=%s, remarks=%s
+                    WHERE record_id=%s
+                """, (at_bats, plate_appearance, hits, doubles, triples, home_runs, strikeouts, walks,
+                      hit_by_pitch, sacrifice_flies, double_play, triple_play, rbis, runs, stolen_bases,
+                      caught_stealing, remarks, record_id))
+            else:
+                cur.execute("""
+                    INSERT INTO BattingRecord (
+                        record_id, at_bats, plate_appearance, hits, doubles, triples, home_runs,
+                        strikeouts, walks, hit_by_pitch, sacrifice_flies, double_play, triple_play,
+                        rbis, runs, stolen_bases, caught_stealing, remarks
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (record_id, at_bats, plate_appearance, hits, doubles, triples, home_runs,
+                      strikeouts, walks, hit_by_pitch, sacrifice_flies, double_play, triple_play,
+                      rbis, runs, stolen_bases, caught_stealing, remarks))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"success": True, "message": "打擊數據已更新"})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
