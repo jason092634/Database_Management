@@ -16,7 +16,6 @@ def search_teams():
         conn = get_connection()
         cur = conn.cursor()
 
-        # SQL 加入 number 與 status
         query = """
             SELECT t.team_id, t.team_name, p.player_id, p.name, p.number, p.status
             FROM Team t

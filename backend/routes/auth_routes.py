@@ -13,7 +13,7 @@ def get_connection():
 def register():
     data = request.json
     username = data.get("username")
-    password = data.get("password")  # 前端已 hash
+    password = data.get("password")
     email = data.get("email")
     admin_key = data.get("admin_key", "")
 
