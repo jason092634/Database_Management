@@ -52,6 +52,8 @@ REDIS_CONFIG = {
     "db": 0
 }
 
+ADMIN_SECRET_KEY=your admin secret key
+
 ### 6. 啟動後端 Flask
 python app.py
 後端將在 http://127.0.0.1:5000/ 啟動。
@@ -116,6 +118,7 @@ frontend/
 
 資管三 B12705013 林志欣
 資管三 B12705044 黃夢恩
+地理三 B12208033 陳煒麟
 =
 
 ## 附註
