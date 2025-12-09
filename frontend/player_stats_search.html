@@ -1,32 +1,120 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <title>球員區間成績查詢</title>
+<meta charset="UTF-8">
+<title>球員區間成績查詢</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        padding: 30px;
+        background-color: #f9f9f9;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    input[type="text"], input[type="date"] {
+        width: 100%;
+        padding: 8px 10px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+    }
+
+    button {
+        padding: 8px 18px;
+        font-size: 14px;
+        border: none;
+        border-radius: 5px;
+        background-color: #4CAF50;
+        color: white;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: background-color 0.3s;
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+
+    #result {
+        margin-top: 30px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 25px;
+    }
+
+    table, th, td {
+        border: 1px solid #ccc;
+    }
+
+    th, td {
+        padding: 8px;
+        text-align: center;
+    }
+
+    th {
+        background-color: #f0f0f0;
+    }
+
+    caption {
+        font-weight: bold;
+        font-size: 1.2em;
+        margin-bottom: 10px;
+    }
+
+    .section-header {
+        background-color: #e6f7ff;
+        font-weight: bold;
+    }
+
+    .error {
+        color: red;
+        font-weight: bold;
+    }
+</style>
 </head>
 <body>
-    <h1>球員區間成績查詢</h1>
 
-    <label>球員姓名：</label>
+<h1>球員區間成績查詢</h1>
+
+<div class="form-group">
+    <label for="player_name">球員姓名：</label>
     <input type="text" id="player_name" required>
-    <br><br>
+</div>
 
-    <label>起始日期：</label>
+<div class="form-group">
+    <label for="start_date">起始日期：</label>
     <input type="date" id="start_date" required>
-    <br><br>
+</div>
 
-    <label>結束日期：</label>
+<div class="form-group">
+    <label for="end_date">結束日期：</label>
     <input type="date" id="end_date" required>
-    <br><br>
+</div>
 
-    <button onclick="searchStats()">查詢</button>
-    <button onclick="location.href='dashboard.html'">回主畫面</button>
+<button onclick="searchStats()">查詢</button>
+<button onclick="location.href='dashboard.html'">回主畫面</button>
 
-    <hr>
+<hr>
 
-    <div id="result"></div>
-
-    <br>
+<div id="result"></div>
 
 <script>
 function searchStats() {
@@ -51,49 +139,56 @@ function searchStats() {
     .then(res => res.json())
     .then(data => {
         const resultDiv = document.getElementById("result");
+        resultDiv.innerHTML = "";
 
         if (!data.success) {
-            resultDiv.innerHTML = `<p style="color:red;">${data.error}</p>`;
+            resultDiv.innerHTML = `<p class="error">${data.error}</p>`;
             return;
         }
 
-        const r = data.result;
+        const results = data.result;
 
-        resultDiv.innerHTML = `
-            <h2>${r.player_name} 的區間成績</h2>
+        results.forEach(r => {
+            const table = document.createElement("table");
 
-            <h3>打擊成績</h3>
-            <p>打數：${r.total_at_bats}</p>
-            <p>打席：${r.total_plate_appearance}</p>
-            <p>安打：${r.total_hits}</p>
-            <p>二壘打：${r.total_doubles}</p>
-            <p>三壘打：${r.total_triples}</p>
-            <p>全壘打：${r.total_home_runs}</p>
-            <p>打點：${r.total_rbis}</p>
-            <p>得分：${r.total_runs}</p>
-            <p>三振：${r.total_batting_strikeouts}</p>
-            <p>四壞：${r.total_walks}</p>
-            <p>觸身球：${r.total_hbp}</p>
-            <p>盜壘：${r.total_stolen_bases}</p>
-            <p>盜壘失敗：${r.total_caught_stealing}</p>
+            table.innerHTML = `
+                <caption>${r.player_name} 的區間成績</caption>
 
-            <h3>投球成績</h3>
-            <p>投球局數：${r.total_innings_pitched}</p>
-            <p>用球數：${r.total_pitches}</p>
-            <p>面對打者：${r.total_batters_faced}</p>
-            <p>三振：${r.total_pitching_strikeouts}</p>
-            <p>四壞：${r.total_pitching_walks}</p>
-            <p>被安打：${r.total_hits_allowed}</p>
-            <p>被全壘打：${r.total_pitching_home_runs}</p>
-            <p>失分：${r.total_runs_allowed}</p>
-            <p>責失分：${r.total_earned_runs}</p>
+                <tr class="section-header"><th colspan="2">打擊成績</th></tr>
+                <tr><td>打數</td><td>${r.total_at_bats}</td></tr>
+                <tr><td>打席</td><td>${r.total_plate_appearance}</td></tr>
+                <tr><td>安打</td><td>${r.total_hits}</td></tr>
+                <tr><td>二壘打</td><td>${r.total_doubles}</td></tr>
+                <tr><td>三壘打</td><td>${r.total_triples}</td></tr>
+                <tr><td>全壘打</td><td>${r.total_home_runs}</td></tr>
+                <tr><td>打點</td><td>${r.total_rbis}</td></tr>
+                <tr><td>得分</td><td>${r.total_runs}</td></tr>
+                <tr><td>三振</td><td>${r.total_batting_strikeouts}</td></tr>
+                <tr><td>四壞</td><td>${r.total_walks}</td></tr>
+                <tr><td>觸身球</td><td>${r.total_hbp}</td></tr>
+                <tr><td>盜壘</td><td>${r.total_stolen_bases}</td></tr>
+                <tr><td>盜壘失敗</td><td>${r.total_caught_stealing}</td></tr>
 
-            <h3>守備</h3>
-            <p>守備機會：${r.total_fielding_chances}</p>
-            <p>刺殺：${r.total_putouts}</p>
-            <p>助殺：${r.total_assists}</p>
-            <p>失誤：${r.total_errors}</p>
-        `;
+                <tr class="section-header"><th colspan="2">投球成績</th></tr>
+                <tr><td>投球局數</td><td>${r.total_innings_pitched}</td></tr>
+                <tr><td>用球數</td><td>${r.total_pitches}</td></tr>
+                <tr><td>面對打者</td><td>${r.total_batters_faced}</td></tr>
+                <tr><td>三振</td><td>${r.total_pitching_strikeouts}</td></tr>
+                <tr><td>四壞</td><td>${r.total_pitching_walks}</td></tr>
+                <tr><td>被安打</td><td>${r.total_hits_allowed}</td></tr>
+                <tr><td>被全壘打</td><td>${r.total_pitching_home_runs}</td></tr>
+                <tr><td>失分</td><td>${r.total_runs_allowed}</td></tr>
+                <tr><td>責失分</td><td>${r.total_earned_runs}</td></tr>
+
+                <tr class="section-header"><th colspan="2">守備成績</th></tr>
+                <tr><td>守備機會</td><td>${r.total_fielding_chances}</td></tr>
+                <tr><td>刺殺</td><td>${r.total_putouts}</td></tr>
+                <tr><td>助殺</td><td>${r.total_assists}</td></tr>
+                <tr><td>失誤</td><td>${r.total_errors}</td></tr>
+            `;
+
+            resultDiv.appendChild(table);
+        });
     })
     .catch(err => {
         console.error(err);
