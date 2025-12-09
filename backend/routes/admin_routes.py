@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 import psycopg2
+from psycopg2 import errors
 from config import DB_CONFIG
 
 admin_bp = Blueprint("admin_bp", __name__)
@@ -56,41 +57,46 @@ def get_teams():
 
 @admin_bp.route("/admin/team/add", methods=["POST"])
 def add_team():
+    data = request.json
+    team_name = data.get("team_name", "").strip()
+    manager_name = data.get("manager_name", "").strip()
+    team_status = data.get("team_status", "Active")
+    league_id = data.get("league_id")
+
+    # 驗證必填欄位
+    if not team_name:
+        return jsonify({"success": False, "error": "球隊名稱必填"})
+    if not league_id:
+        return jsonify({"success": False, "error": "請選擇聯盟"})
+
+    conn = get_connection()
     try:
-        data = request.json
-        team_name = data.get("team_name", "").strip()
-        manager_name = data.get("manager_name", "").strip()
-        team_status = data.get("team_status", "Active")
-        league_id = data.get("league_id")
-
-        # 驗證必填欄位
-        if not team_name:
-            return jsonify({"success": False, "error": "球隊名稱必填"})
-        if not league_id:
-            return jsonify({"success": False, "error": "請選擇聯盟"})
-
-        conn = get_connection()
         cur = conn.cursor()
+        # 開啟交易
+        conn.autocommit = False  
 
-        # 檢查球隊名稱是否已存在
-        cur.execute("SELECT COUNT(*) FROM team WHERE team_name = %s", (team_name,))
-        if cur.fetchone()[0] > 0:
-            conn.close()
-            return jsonify({"success": False, "error": "球隊名稱已存在"})
-
-        # 新增球隊
+        # 直接 INSERT，利用 UNIQUE constraint 避免重複
         cur.execute("""
             INSERT INTO team (team_name, manager_name, team_status, league_id)
             VALUES (%s, %s, %s, %s)
         """, (team_name, manager_name or None, team_status, league_id))
 
+        # 提交交易
         conn.commit()
-        conn.close()
-
         return jsonify({"success": True, "message": "新增球隊成功"})
 
+    except errors.UniqueViolation:
+        # 若違反 UNIQUE constraint，回滾交易
+        conn.rollback()
+        return jsonify({"success": False, "error": "球隊名稱已存在"})
+
     except Exception as e:
+        # 其他錯誤也回滾交易
+        conn.rollback()
         return jsonify({"success": False, "error": str(e)})
+
+    finally:
+        conn.close()
 
 @admin_bp.route("/admin/team/edit", methods=["POST"])
 def edit_team():
@@ -104,9 +110,10 @@ def edit_team():
     if not team_id:
         return jsonify({"success": False, "error": "請選擇球隊"})
 
+    conn = get_connection()
     try:
-        conn = get_connection()
         cur = conn.cursor()
+        conn.autocommit = False  # 開啟交易管理
 
         # Build dynamic SQL for optional fields
         update_fields = []
@@ -131,13 +138,16 @@ def edit_team():
         params.append(team_id)
         sql = f"UPDATE Team SET {', '.join(update_fields)} WHERE team_id = %s"
         cur.execute(sql, params)
-        conn.commit()
-        conn.close()
 
+        conn.commit()  # 成功提交交易
         return jsonify({"success": True, "message": "球隊資料已更新"})
 
     except Exception as e:
+        conn.rollback()  # 發生錯誤回滾交易
         return jsonify({"success": False, "error": str(e)})
+
+    finally:
+        conn.close()
 
 @admin_bp.route("/admin/player/add", methods=["POST"])
 def add_player():
@@ -150,18 +160,30 @@ def add_player():
     if not player_name or not team_id:
         return jsonify({"success": False, "error": "球員姓名與球隊為必填"})
 
+    conn = get_connection()
     try:
-        conn = get_connection()
         cur = conn.cursor()
+        conn.autocommit = False  # 開啟交易管理
+
+        # 直接 INSERT，若有 UNIQUE constraint 可避免重複
         cur.execute("""
             INSERT INTO player (name, team_id, number, status)
             VALUES (%s, %s, %s, %s)
         """, (player_name, team_id, number, status))
+
         conn.commit()
-        conn.close()
-        return jsonify({"success": True})
+        return jsonify({"success": True, "message": "新增球員成功"})
+
+    except errors.UniqueViolation:
+        conn.rollback()
+        return jsonify({"success": False, "message": "該球員已存在"})
+
     except Exception as e:
+        conn.rollback()
         return jsonify({"success": False, "error": str(e)})
+
+    finally:
+        conn.close()
 
 @admin_bp.route("/admin/umpires", methods=["GET"])
 def get_umpires():
@@ -205,7 +227,7 @@ def get_players_by_team():
         return jsonify({"success": True, "players": players})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
-    
+
 @admin_bp.route("/admin/player/edit", methods=["POST"])
 def edit_player():
     data = request.json
@@ -222,10 +244,19 @@ def edit_player():
     if not any([player_name, team_id, number, status]):
         return jsonify({"success": False, "error": "沒有欄位需要修改"})
 
+    conn = get_connection()
     try:
-        conn = get_connection()
         cur = conn.cursor()
+        # 關閉自動提交，開始交易
+        conn.autocommit = False
 
+        # 鎖定該筆 player 資料，避免同時修改
+        cur.execute("SELECT 1 FROM player WHERE player_id = %s FOR UPDATE", (player_id,))
+        if not cur.fetchone():
+            conn.rollback()
+            return jsonify({"success": False, "error": "找不到指定球員"})
+
+        # Build dynamic SQL for optional fields
         update_fields = []
         params = []
 
@@ -245,13 +276,18 @@ def edit_player():
         params.append(player_id)
         sql = f"UPDATE player SET {', '.join(update_fields)} WHERE player_id = %s"
         cur.execute(sql, params)
+
+        # 提交交易
         conn.commit()
+        return jsonify({"success": True, "message": "球員資料已更新"})
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "error": str(e)})
+
+    finally:
         conn.close()
 
-        return jsonify({"success": True, "message": "球員資料已更新"})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
-    
 @admin_bp.route("/admin/umpire/add", methods=["POST"])
 def add_umpire():
     data = request.get_json()
@@ -261,31 +297,30 @@ def add_umpire():
     if not umpire_name:
         return jsonify({"success": False, "error": "裁判姓名為必填"})
 
+    conn = get_connection()
     try:
-        conn = get_connection()
         cur = conn.cursor()
+        conn.autocommit = False  # 開啟交易
 
-        # 先檢查是否已存在相同名字
-        cur.execute("SELECT COUNT(*) FROM Umpire WHERE name = %s", (umpire_name,))
-        exists = cur.fetchone()[0]
-
-        if exists > 0:
-            cur.close()
-            conn.close()
-            return jsonify({"success": False, "error": "裁判名稱已存在"})
-
-        # 若不存在，則新增
+        # 利用 UNIQUE constraint 避免 race condition
         cur.execute("""
             INSERT INTO Umpire (name, status)
             VALUES (%s, %s)
         """, (umpire_name, status))
+
         conn.commit()
-        cur.close()
-        conn.close()
         return jsonify({"success": True})
 
+    except errors.UniqueViolation:
+        conn.rollback()
+        return jsonify({"success": False, "error": "裁判名稱已存在"})
+
     except Exception as e:
+        conn.rollback()
         return jsonify({"success": False, "error": str(e)})
+
+    finally:
+        conn.close()
 
 @admin_bp.route("/admin/umpire/edit", methods=["POST"])
 def edit_umpire():
@@ -297,25 +332,31 @@ def edit_umpire():
     if not umpire_id or not name:
         return jsonify({"success": False, "error": "裁判 ID 與姓名為必填"})
 
+    conn = get_connection()
     try:
-        conn = get_connection()
         cur = conn.cursor()
+        conn.autocommit = False  # 開啟交易管理
 
-        # 檢查名稱是否與其他裁判重複
-        cur.execute("SELECT COUNT(*) FROM Umpire WHERE name = %s AND umpire_id <> %s", (name, umpire_id))
-        if cur.fetchone()[0] > 0:
-            cur.close()
-            conn.close()
-            return jsonify({"success": False, "error": "裁判名稱已存在"})
+        # 直接更新，依靠資料庫 UNIQUE constraint 避免重複名稱
+        cur.execute("""
+            UPDATE Umpire
+            SET name = %s, status = %s
+            WHERE umpire_id = %s
+        """, (name, status, umpire_id))
 
-        # 更新裁判
-        cur.execute("UPDATE Umpire SET name = %s, status = %s WHERE umpire_id = %s", (name, status, umpire_id))
         conn.commit()
-        cur.close()
-        conn.close()
         return jsonify({"success": True})
+
+    except errors.UniqueViolation:
+        conn.rollback()
+        return jsonify({"success": False, "error": "裁判名稱已存在"})
+
     except Exception as e:
+        conn.rollback()
         return jsonify({"success": False, "error": str(e)})
+
+    finally:
+        conn.close()
 
 @admin_bp.route("/admin/match/add", methods=["POST"])
 def add_match():
@@ -346,9 +387,10 @@ def add_match():
     if home_team_id == away_team_id:
         return jsonify({"success": False, "error": "主隊與客隊不能相同"})
 
+    conn = get_connection()
     try:
-        conn = get_connection()
         cur = conn.cursor()
+        conn.autocommit = False  # 開啟交易管理
 
         cur.execute("""
             INSERT INTO Match
@@ -369,13 +411,19 @@ def add_match():
         ))
 
         conn.commit()
-        cur.close()
-        conn.close()
         return jsonify({"success": True, "message": "新增比賽成功"})
 
+    except errors.UniqueViolation:
+        conn.rollback()
+        return jsonify({"success": False, "error": "該比賽已存在"})
+
     except Exception as e:
+        conn.rollback()
         return jsonify({"success": False, "error": str(e)})
-    
+
+    finally:
+        conn.close()
+
 @admin_bp.route("/admin/matches", methods=["GET"])
 def get_matches_by_date():
     date = request.args.get("date")
@@ -447,9 +495,11 @@ def edit_match():
     if home_team_id == away_team_id:
         return jsonify({"success": False, "error": "主隊與客隊不能相同"})
 
+    conn = get_connection()
     try:
-        conn = get_connection()
         cur = conn.cursor()
+        # 開啟交易
+        conn.autocommit = False
 
         update_fields = []
         params = []
@@ -494,15 +544,20 @@ def edit_match():
         params.append(match_id)
         sql = f"UPDATE Match SET {', '.join(update_fields)} WHERE match_id = %s"
         cur.execute(sql, params)
-        conn.commit()
-        cur.close()
-        conn.close()
 
+        # 提交交易
+        conn.commit()
         return jsonify({"success": True, "message": "比賽資料已更新"})
 
     except Exception as e:
+        # 回滾交易
+        conn.rollback()
         return jsonify({"success": False, "error": str(e)})
-    
+
+    finally:
+        cur.close()
+        conn.close()
+
 @admin_bp.route("/admin/match/umpires", methods=["GET"])
 def get_match_umpires():
     match_id = request.args.get("match_id")
@@ -535,9 +590,12 @@ def add_match_umpire():
     if not match_id or not umpires:
         return jsonify({"success": False, "error": "缺少比賽或裁判資料"})
 
+    conn = get_connection()
     try:
-        conn = get_connection()
         cur = conn.cursor()
+
+        # 開啟交易管理
+        conn.autocommit = False
 
         for u in umpires:
             role = u.get("role")
@@ -558,12 +616,18 @@ def add_match_umpire():
                 VALUES (%s, %s, %s)
             """, (match_id, umpire_id, role))
 
+        # 提交交易
         conn.commit()
+        return jsonify({"success": True, "message": "裁判名單已更新"})
+
+    except Exception as e:
+        # 發生錯誤時回滾
+        conn.rollback()
+        return jsonify({"success": False, "error": str(e)})
+
+    finally:
         cur.close()
         conn.close()
-        return jsonify({"success": True, "message": "裁判名單已更新"})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
 
 @admin_bp.route("/admin/match/players", methods=["GET"])
 def get_match_players():
@@ -619,9 +683,11 @@ def add_match_player():
     if not match_id or not players:
         return jsonify({"success": False, "error": "缺少比賽或球員資料"})
 
+    conn = get_connection()
     try:
-        conn = get_connection()
         cur = conn.cursor()
+        # 開啟交易管理
+        conn.autocommit = False
 
         for p in players:
             player_id = p.get("player_id")
@@ -636,6 +702,7 @@ def add_match_player():
             cur.execute("""
                 SELECT record_id FROM Match_Player
                 WHERE match_id = %s AND player_id = %s
+                FOR UPDATE
             """, (match_id, player_id))
             row = cur.fetchone()
 
@@ -653,13 +720,18 @@ def add_match_player():
                     VALUES (%s, %s, %s, %s, %s)
                 """, (match_id, player_id, position, batting_order, is_starting))
 
+        # 提交交易
         conn.commit()
-        cur.close()
-        conn.close()
         return jsonify({"success": True, "message": "球員出賽名單已更新"})
 
     except Exception as e:
+        # 發生錯誤時回滾
+        conn.rollback()
         return jsonify({"success": False, "error": str(e)})
+
+    finally:
+        cur.close()
+        conn.close()
 
 @admin_bp.route("/admin/match/batting", methods=["GET"])
 def get_match_batting():
@@ -746,9 +818,10 @@ def add_match_batting():
     if not records or len(records) == 0:
         return jsonify({"success": False, "error": "沒有有效的打擊數據可以更新"})
 
+    conn = get_connection()
     try:
-        conn = get_connection()
         cur = conn.cursor()
+        conn.autocommit = False  # 開啟交易管理
 
         for r in records:
             record_id = r.get("record_id")
@@ -773,11 +846,12 @@ def add_match_batting():
             caught_stealing = r.get("caught_stealing", 0)
             remarks = r.get("remarks", "")
 
-            # 檢查是否已存在
-            cur.execute("SELECT 1 FROM BattingRecord WHERE record_id = %s", (record_id,))
+            # 檢查是否已存在，並加上 FOR UPDATE 鎖定該筆資料
+            cur.execute("SELECT 1 FROM BattingRecord WHERE record_id = %s FOR UPDATE", (record_id,))
             exists = cur.fetchone()
 
             if exists:
+                # 更新
                 cur.execute("""
                     UPDATE BattingRecord
                     SET at_bats=%s, plate_appearance=%s, hits=%s, doubles=%s, triples=%s,
@@ -789,6 +863,7 @@ def add_match_batting():
                       hit_by_pitch, sacrifice_flies, double_play, triple_play, rbis, runs, stolen_bases,
                       caught_stealing, remarks, record_id))
             else:
+                # 新增
                 cur.execute("""
                     INSERT INTO BattingRecord (
                         record_id, at_bats, plate_appearance, hits, doubles, triples, home_runs,
@@ -799,13 +874,17 @@ def add_match_batting():
                       strikeouts, walks, hit_by_pitch, sacrifice_flies, double_play, triple_play,
                       rbis, runs, stolen_bases, caught_stealing, remarks))
 
+        # 提交交易
         conn.commit()
-        cur.close()
-        conn.close()
         return jsonify({"success": True, "message": "打擊數據已更新"})
 
     except Exception as e:
+        conn.rollback()  # 發生錯誤回滾
         return jsonify({"success": False, "error": str(e)})
+
+    finally:
+        cur.close()
+        conn.close()
 
 @admin_bp.route("/admin/match/pitching", methods=["GET"])
 def get_match_pitching():
@@ -899,9 +978,10 @@ def add_match_pitching():
     if not records or len(records) == 0:
         return jsonify({"success": False, "error": "沒有有效的投球數據可以更新"})
 
+    conn = get_connection()
     try:
-        conn = get_connection()
         cur = conn.cursor()
+        conn.autocommit = False  # 開啟交易管理
 
         for r in records:
             record_id = r.get("record_id")
@@ -931,11 +1011,12 @@ def add_match_pitching():
             balks = r.get("balks", 0)
             remarks = r.get("remarks", "")
 
-            # 檢查是否已存在
-            cur.execute("SELECT 1 FROM PitchingRecord WHERE record_id = %s", (record_id,))
+            # 檢查是否已存在，並加鎖
+            cur.execute("SELECT 1 FROM PitchingRecord WHERE record_id = %s FOR UPDATE", (record_id,))
             exists = cur.fetchone()
 
             if exists:
+                # 更新
                 cur.execute("""
                     UPDATE PitchingRecord
                     SET pitching_role=%s, pitch_result=%s, innings_pitched=%s, pitches=%s, batters_faced=%s,
@@ -948,6 +1029,7 @@ def add_match_pitching():
                       triples, home_runs, runs_allowed, earned_runs, fly_outs, ground_outs,
                       line_outs, stolen_bases_allowed, wild_pitches, balks, remarks, record_id))
             else:
+                # 新增
                 cur.execute("""
                     INSERT INTO PitchingRecord (
                         record_id, pitching_role, pitch_result, innings_pitched, pitches, batters_faced,
@@ -961,12 +1043,15 @@ def add_match_pitching():
                       stolen_bases_allowed, wild_pitches, balks, remarks))
 
         conn.commit()
-        cur.close()
-        conn.close()
         return jsonify({"success": True, "message": "投球數據已更新"})
 
     except Exception as e:
+        conn.rollback()  # 發生錯誤回滾
         return jsonify({"success": False, "error": str(e)})
+
+    finally:
+        cur.close()
+        conn.close()
 
 @admin_bp.route("/admin/match/fielding", methods=["GET"])
 def get_match_fielding():
@@ -1039,9 +1124,10 @@ def add_match_fielding():
     if not records or len(records) == 0:
         return jsonify({"success": False, "error": "沒有有效的守備數據可以更新"})
 
+    conn = get_connection()
     try:
-        conn = get_connection()
         cur = conn.cursor()
+        conn.autocommit = False  # 開啟交易管理
 
         for r in records:
             record_id = r.get("record_id")
@@ -1054,8 +1140,8 @@ def add_match_fielding():
             errors = r.get("errors", 0)
             remarks = r.get("remarks", "")
 
-            # 檢查是否已存在
-            cur.execute("SELECT 1 FROM FieldingRecord WHERE record_id = %s", (record_id,))
+            # 檢查是否已存在，並加鎖
+            cur.execute("SELECT 1 FROM FieldingRecord WHERE record_id = %s FOR UPDATE", (record_id,))
             exists = cur.fetchone()
 
             if exists:
@@ -1071,9 +1157,12 @@ def add_match_fielding():
                 """, (record_id, fielding_chances, putouts, assists, errors, remarks))
 
         conn.commit()
-        cur.close()
-        conn.close()
         return jsonify({"success": True, "message": "守備數據已更新"})
 
     except Exception as e:
+        conn.rollback()  # 發生錯誤回滾
         return jsonify({"success": False, "error": str(e)})
+
+    finally:
+        cur.close()
+        conn.close()

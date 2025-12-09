@@ -1,4 +1,5 @@
 import psycopg2
+from psycopg2 import errors
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import DB_CONFIG, ADMIN_SECRET_KEY
@@ -27,6 +28,8 @@ def register():
         else:
             return jsonify({"success": False, "error": "Admin 密鑰錯誤"})
 
+    conn = None
+    cur = None
     try:
         conn = get_connection()
         cur = conn.cursor()
@@ -34,30 +37,36 @@ def register():
         # 檢查 username 是否存在
         cur.execute('SELECT COUNT(*) FROM "User" WHERE username = %s', (username,))
         if cur.fetchone()[0] > 0:
-            cur.close()
-            conn.close()
             return jsonify({"success": False, "error": "使用者名稱已存在"})
 
         # 檢查 email 是否存在
         cur.execute('SELECT COUNT(*) FROM "User" WHERE email = %s', (email,))
         if cur.fetchone()[0] > 0:
-            cur.close()
-            conn.close()
             return jsonify({"success": False, "error": "電子郵件已存在"})
 
         # 新增使用者
-        cur.execute(
-            'INSERT INTO "User" (username, password, email, role) VALUES (%s, %s, %s, %s)',
-            (username, password, email, role)
-        )
-
-        conn.commit()
-        cur.close()
-        conn.close()
+        try:
+            cur.execute(
+                'INSERT INTO "User" (username, password, email, role) VALUES (%s, %s, %s, %s)',
+                (username, password, email, role)
+            )
+            conn.commit()  # 交易提交
+        except errors.UniqueViolation:
+            conn.rollback()  # 遇到 UNIQUE 衝突就 rollback
+            return jsonify({"success": False, "error": "帳號或郵件已存在"})
+        
         return jsonify({"success": True, "role": role})
 
     except Exception as e:
+        if conn:
+            conn.rollback()
         return jsonify({"success": False, "error": str(e)})
+
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
 
 @auth_bp.route("/login", methods=["POST"])
 def login_api():

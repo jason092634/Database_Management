@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, session
 import psycopg2
+from psycopg2 import errors
 from config import DB_CONFIG
 
 follow = Blueprint("follow", __name__)
@@ -31,98 +32,86 @@ def get_current_user_id():
 
     return 1
 
-
 # 1. 追蹤球員
 @follow.route("/follow/player", methods=["POST"])
 def follow_player():
+    data = request.json
+    player_id = data.get("player_id")
+    user_id = get_current_user_id()
+
+    if not player_id:
+        return jsonify({"success": False, "error": "缺少 player_id"})
+
+    conn = get_connection()
     try:
-        data = request.json
-        player_id = data.get("player_id")
-        user_id = get_current_user_id()
-
-        if not player_id:
-            return jsonify({"success": False, "error": "缺少 player_id"})
-
-        conn = get_connection()
         cur = conn.cursor()
+        # 開啟交易
+        conn.autocommit = False  
 
-        # 避免重複追蹤
-        cur.execute("""
-            SELECT 1 FROM Followed_player 
-            WHERE user_id = %s AND player_id = %s
-        """, (user_id, player_id))
-
-        if cur.fetchone():
-            conn.close()
-            return jsonify({"success": True, "message": "已經追蹤過該球員"})
-
-        # 新增追蹤紀錄
+        # 直接 INSERT，利用 UNIQUE constraint 避免重複
         cur.execute("""
             INSERT INTO Followed_player (user_id, player_id, follow_time)
             VALUES (%s, %s, NOW())
         """, (user_id, player_id))
 
         conn.commit()
-        conn.close()
-
         return jsonify({"success": True, "message": "成功追蹤球員"})
-    
+
+    except errors.UniqueViolation:
+        conn.rollback()
+        return jsonify({"success": True, "message": "已經追蹤過該球員"})
+
     except Exception as e:
+        conn.rollback()
         return jsonify({"success": False, "error": str(e)})
 
+    finally:
+        conn.close()
 
 # 2. 追蹤球隊
 @follow.route("/follow/team", methods=["POST"])
 def follow_team():
+    data = request.json
+    team_id = data.get("team_id")
+    team_name = data.get("team_name")
+    user_id = get_current_user_id()
+
+    if not team_id and not team_name:
+        return jsonify({"success": False, "error": "缺少 team_id 或 team_name"})
+
+    conn = get_connection()
     try:
-        data = request.json
-        team_id = data.get("team_id")
-        team_name = data.get("team_name")
-
-        user_id = get_current_user_id()
-
-        if not team_id and not team_name:
-            return jsonify({"success": False, "error": "缺少 team_id 或 team_name"})
-
-        conn = get_connection()
         cur = conn.cursor()
+        conn.autocommit = False  # 開啟交易
 
-        # 如果沒有 team_id，但有 team_name，就用名稱查出 team_id
-        if not team_id and team_name:
-            cur.execute(
-                "SELECT team_id FROM Team WHERE team_name = %s LIMIT 1",
-                (team_name,),
-            )
+        # 如果沒有 team_id，用 team_name 查
+        if not team_id:
+            cur.execute("SELECT team_id FROM Team WHERE team_name = %s LIMIT 1", (team_name,))
             row = cur.fetchone()
             if not row:
-                conn.close()
+                conn.rollback()
                 return jsonify({"success": False, "error": "找不到該球隊"})
             team_id = row[0]
 
-        # 避免重複追蹤
-        cur.execute("""
-            SELECT 1 FROM Followed_team
-            WHERE user_id = %s AND team_id = %s
-        """, (user_id, team_id))
-
-        if cur.fetchone():
-            conn.close()
-            return jsonify({"success": True, "message": "已經追蹤過該球隊"})
-
-        # 新增追蹤紀錄
+        # INSERT，利用 UNIQUE constraint 避免重複
         cur.execute("""
             INSERT INTO Followed_team (user_id, team_id, follow_time)
             VALUES (%s, %s, NOW())
         """, (user_id, team_id))
 
         conn.commit()
-        conn.close()
-
         return jsonify({"success": True, "message": "成功追蹤球隊"})
 
+    except errors.UniqueViolation:
+        conn.rollback()
+        return jsonify({"success": True, "message": "已經追蹤過該球隊"})
+
     except Exception as e:
+        conn.rollback()
         return jsonify({"success": False, "error": str(e)})
 
+    finally:
+        conn.close()
 
 # 3. 取得追蹤球員列表
 @follow.route("/followed/players", methods=["GET"])
@@ -165,7 +154,6 @@ def get_followed_players():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
-
 
 # 4. 取得追蹤球隊列表
 @follow.route("/followed/teams", methods=["GET"])
