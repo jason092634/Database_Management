@@ -348,9 +348,6 @@ def unfollow_team():
 # 取得某球員最近 10 場比賽資訊
 @follow.route("/follow/player/<int:player_id>/recent_matches", methods=["GET"])
 def get_player_recent_matches(player_id):
-    """
-    回傳指定球員最近 10 場有出賽的比賽資訊
-    """
     try:
         conn = get_connection()
         cur = conn.cursor()
@@ -399,9 +396,6 @@ def get_player_recent_matches(player_id):
 # 取得某球隊最近 10 場比賽資訊
 @follow.route("/follow/team/<int:team_id>/recent_matches", methods=["GET"])
 def get_team_recent_matches(team_id):
-    """
-    回傳指定球隊最近 10 場比賽（不分主客場）
-    """
     try:
         conn = get_connection()
         cur = conn.cursor()

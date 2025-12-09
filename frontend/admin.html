@@ -9,7 +9,6 @@
         margin-bottom: 30px;
       }
 
-      /* Tab 按鈕 */
       .tab-buttons,
       .sub-tab-buttons {
         display: flex;
@@ -34,36 +33,31 @@
         background-color: #0056b3;
       }
 
-      /* 當前選中 tab 按鈕 */
       .tab-buttons button.active,
       .sub-tab-buttons button.active {
         background-color: #0056b3;
       }
 
-      /* Tab 內容 */
       .tab-content,
       .sub-tab-content {
-        display: none; /* 預設隱藏 */
+        display: none;
         background-color: #fff;
         padding: 20px;
         border-radius: 6px;
         box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
       }
 
-      /* 顯示當前 tab */
       .tab-content.active,
       .sub-tab-content.active {
         display: block;
       }
 
-      /* 表單容器 */
       .form-container {
         display: flex;
         flex-wrap: wrap;
         gap: 20px;
       }
 
-      /* 單個表單區塊 */
       .form-box {
         background-color: #f1f1f1;
         padding: 15px;
@@ -72,14 +66,12 @@
         min-width: 300px;
       }
 
-      /* 表單標題 */
       .form-box h3 {
         margin-top: 0;
         margin-bottom: 10px;
         font-size: 18px;
       }
 
-      /* 表單標籤 */
       label {
         display: block;
         margin-top: 10px;
@@ -87,7 +79,6 @@
         font-weight: bold;
       }
 
-      /* 表單輸入 */
       input,
       select {
         width: 100%;
@@ -97,7 +88,6 @@
         box-sizing: border-box;
       }
 
-      /* 按鈕 */
       button.submit-btn {
         margin-top: 15px;
         background-color: #28a745;
@@ -112,14 +102,12 @@
         background-color: #218838;
       }
 
-      /* 表格樣式 */
       table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 10px;
       }
 
-      /* 表格表頭樣式改為深色系 */
       table th {
         background-color: #b3efc3;
         color: #000000;
@@ -127,19 +115,16 @@
         text-align: center;
       }
 
-      /* 表格單元格 */
       table td {
         border: 1px solid #ccc;
         padding: 6px;
         text-align: center;
       }
 
-      /* 可選：偶數列背景色稍微區分 */
       table tr:nth-child(even) {
         background-color: #f2f2f2;
       }
 
-      /* 球員打擊 / 投球 / 守備表格容器 */
       #batting-table,
       #pitching-table,
       #fielding-table {
@@ -715,7 +700,7 @@
       </button>
     </div>
 
-    <!-- 投球數據 Tab -->
+    <!-- 球員投球數據表格 -->
     <div id="pitching_record" class="tab-content">
       <h2>球員投球數據管理</h2>
 
@@ -778,7 +763,7 @@
       </button>
     </div>
 
-    <!-- 守備數據 Tab -->
+    <!-- 球員守備數據表格 -->
     <div id="fielding_record" class="tab-content">
       <h2>球員守備數據管理</h2>
 
@@ -885,10 +870,8 @@
           const op = document.createElement("option");
           op.value = t.team_id;
 
-          // 顯示用
           op.textContent = `${t.team_name}（ID: ${t.team_id}）`;
 
-          // 資料用（更可靠）
           op.dataset.teamname = t.team_name;
           op.dataset.manager = t.manager_name;
           op.dataset.status = t.team_status;
@@ -1269,7 +1252,7 @@
       // 載入裁判清單
       async function loadUmpires() {
         try {
-          const res = await fetch("/admin/umpires"); // 後端要提供 GET /admin/umpires API
+          const res = await fetch("/admin/umpires");
           const data = await res.json();
           if (!data.success) {
             console.error("載入裁判失敗：", data.error);
@@ -2474,11 +2457,11 @@
             .map((tr) => {
               const inputs = tr.querySelectorAll("input");
               if (!inputs.length) return null; // 跳過分隔列
-              const id = parseInt(tr.dataset.recordId); // ⚡ 使用 record_id
+              const id = parseInt(tr.dataset.recordId);
               if (isNaN(id)) return null;
 
               return {
-                record_id: id, // ⚡ 用 record_id 更新/新增
+                record_id: id,
                 plate_appearance: parseInt(inputs[0].value) || 0,
                 at_bats: parseInt(inputs[1].value) || 0,
                 hits: parseInt(inputs[2].value) || 0,
@@ -2520,7 +2503,7 @@
 
         // 生成球員列 HTML
         function generatePlayerRowHTML(p) {
-          const r = p.batting_record || {}; // ⚡ 使用 batting_record
+          const r = p.batting_record || {};
           return `
             <td>${p.name}</td>
             <td><input type="number" value="${r.plate_appearance ?? 0}" /></td>
@@ -2643,7 +2626,7 @@
 
               return {
                 record_id: id,
-                pitching_role: inputs[0].value || null, // ⚡ 空白傳 null
+                pitching_role: inputs[0].value || null,
                 pitch_result: inputs[1].value || "",
                 innings_pitched: parseFloat(inputs[2].value) || 0,
                 pitches: parseInt(inputs[3].value) || 0,
