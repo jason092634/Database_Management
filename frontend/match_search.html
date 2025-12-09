@@ -1,74 +1,174 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
     <title>比賽結果查詢</title>
-</head>
-<body>
-    <h1>查詢比賽結果</h1>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        background-color: #f4f4f9;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 40px;
+      }
 
-    <label>日期：</label>
-    <input type="date" id="matchDate"><br><br>
+      .container {
+        background: #ffffff;
+        width: 650px;
+        padding: 35px 40px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
 
-    <label>球隊名稱（可選）：</label>
-    <input type="text" id="teamName" placeholder="輸入球隊名稱"><br><br>
+      h1 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: #333;
+      }
 
-    <button onclick="searchMatch()">查詢</button>
-    <button onclick="location.href='dashboard.html'">回主畫面</button>
+      input[type="date"],
+      input[type="text"] {
+        width: calc(100% - 22px);
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: 15px;
+        margin-bottom: 15px;
+        box-sizing: border-box;
+      }
 
-    <h2>結果：</h2>
-    <div id="result"></div>
+      .btn {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 6px;
+        font-size: 15px;
+        cursor: pointer;
+        margin-right: 10px;
+        color: white;
+        background-color: #007bff;
+        transition: background 0.2s;
+      }
+
+      .btn:hover {
+        background-color: #0056b3;
+      }
+
+      .gray-btn {
+        background-color: #6c757d;
+      }
+
+      .gray-btn:hover {
+        background-color: #545b62;
+      }
+
+      h2 {
+        margin-top: 25px;
+        color: #333;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 5px;
+      }
+
+      .match-card {
+        background-color: #f9f9f9;
+        padding: 12px 15px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        border: 1px solid #ddd;
+      }
+
+      .match-card strong {
+        color: #007bff;
+        font-size: 16px;
+      }
+
+      .match-card p {
+        margin: 3px 0;
+        color: #555;
+        font-size: 14px;
+      }
+
+      hr {
+        border: none;
+        border-top: 1px solid #ddd;
+        margin: 10px 0 0 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>查詢比賽結果</h1>
+
+      <label>日期：</label><br />
+      <input type="date" id="matchDate" /><br /><br />
+
+      <label>球隊名稱（可選）：</label><br />
+      <input type="text" id="teamName" placeholder="輸入球隊名稱" /><br /><br />
+
+      <button class="btn" onclick="searchMatch()">查詢</button>
+      <button class="btn gray-btn" onclick="location.href='dashboard.html'">
+        回主畫面
+      </button>
+
+      <h2>結果：</h2>
+      <div id="result"></div>
+    </div>
 
     <script>
-        async function searchMatch() {
-            const date = document.getElementById("matchDate").value;
-            const teamName = document.getElementById("teamName").value.trim();
-            const resultDiv = document.getElementById("result");
-            resultDiv.innerHTML = "";
+      async function searchMatch() {
+        const date = document.getElementById("matchDate").value;
+        const teamName = document.getElementById("teamName").value.trim();
+        const resultDiv = document.getElementById("result");
+        resultDiv.innerHTML = "";
 
-            if (!date) {
-                resultDiv.innerHTML = "<p>請輸入日期</p>";
-                return;
-            }
-
-            try {
-                const res = await fetch("http://127.0.0.1:5000/search/matches", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ date, team_name: teamName })
-                });
-
-                const data = await res.json();
-
-                if (data.success) {
-                    const matches = data.result;
-
-                    if (!matches || matches.length === 0) {
-                        resultDiv.innerHTML = "<p>找不到符合的比賽</p>";
-                        return;
-                    }
-
-                    matches.forEach(m => {
-                        const div = document.createElement("div");
-                        div.innerHTML = `
-                            <strong>比賽ID: ${m.match_id}</strong><br>
-                            日期: ${m.date} | 時間: ${m.start_time}<br>
-                            地點: ${m.location} | 天氣: ${m.weather || "未知"} | 溫度: ${m.temperature || "未知"}<br>
-                            主隊: ${m.home_team_name} (${m.home_score}) vs 客隊: ${m.away_team_name} (${m.away_score})<br>
-                            狀態: ${m.status} | 觀眾數: ${m.attendance || "未知"}
-                            <hr>
-                        `;
-                        resultDiv.appendChild(div);
-                    });
-                } else {
-                    resultDiv.innerHTML = "<p>查詢失敗：" + data.error + "</p>";
-                }
-
-            } catch (err) {
-                resultDiv.innerHTML = "<p>發生錯誤：" + err + "</p>";
-            }
+        if (!date) {
+          resultDiv.innerHTML = "<p>請輸入日期</p>";
+          return;
         }
-    </script>
-</body>
-</html>
 
+        try {
+          const res = await fetch("http://127.0.0.1:5000/search/matches", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ date, team_name: teamName }),
+          });
+
+          const data = await res.json();
+
+          if (data.success) {
+            const matches = data.result;
+
+            if (!matches || matches.length === 0) {
+              resultDiv.innerHTML = "<p>找不到符合的比賽</p>";
+              return;
+            }
+
+            matches.forEach((m) => {
+              const card = document.createElement("div");
+              card.className = "match-card";
+              card.innerHTML = `
+              <p><strong>比賽ID: ${m.match_id}</strong></p>
+              <p>日期: ${m.date} | 時間: ${m.start_time}</p>
+              <p>地點: ${m.location} | 天氣: ${m.weather || "未知"} | 溫度: ${
+                m.temperature || "未知"
+              }</p>
+              <p>主隊: ${m.home_team_name} (${m.home_score}) vs 客隊: ${
+                m.away_team_name
+              } (${m.away_score})</p>
+              <p>狀態: ${m.status} | 觀眾數: ${m.attendance || "未知"}</p>
+              <hr>
+            `;
+              resultDiv.appendChild(card);
+            });
+          } else {
+            resultDiv.innerHTML = "<p>查詢失敗：" + data.error + "</p>";
+          }
+        } catch (err) {
+          resultDiv.innerHTML = "<p>發生錯誤：" + err + "</p>";
+        }
+      }
+    </script>
+  </body>
+</html>

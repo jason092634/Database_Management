@@ -1,66 +1,162 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <title>球員查詢</title>
+  <meta charset="UTF-8">
+  <title>球員查詢</title>
+  <style>
+    body {
+      font-family: "Arial", sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 40px;
+    }
+
+    .container {
+      background: #ffffff;
+      width: 600px;
+      padding: 35px 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #333;
+    }
+
+    input[type="text"] {
+      width: calc(100% - 22px);
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+
+    .btn {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      cursor: pointer;
+      margin-right: 10px;
+      color: white;
+      background-color: #007bff;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background-color: #0056b3;
+    }
+
+    .gray-btn {
+      background-color: #6c757d;
+    }
+
+    .gray-btn:hover {
+      background-color: #545b62;
+    }
+
+    h2 {
+      margin-top: 25px;
+      color: #333;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 5px;
+    }
+
+    .player-card {
+      background-color: #f9f9f9;
+      padding: 12px 15px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border: 1px solid #ddd;
+    }
+
+    .player-card strong {
+      color: #007bff;
+      font-size: 16px;
+    }
+
+    .player-card p {
+      margin: 3px 0;
+      color: #555;
+      font-size: 14px;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #ddd;
+      margin: 10px 0 0 0;
+    }
+  </style>
 </head>
 <body>
+  <div class="container">
     <h1>查詢球員資訊</h1>
+
     <input type="text" id="playerInput" placeholder="輸入球員姓名">
-    <button onclick="searchPlayer()">查詢</button>
-    <button onclick="location.href='dashboard.html'">回主畫面</button>
+    <button class="btn" onclick="searchPlayer()">查詢</button>
+    <button class="btn gray-btn" onclick="location.href='dashboard.html'">回主畫面</button>
 
     <h2>結果：</h2>
     <div id="result"></div>
+  </div>
 
-    <script>
-        async function searchPlayer() {
-            const name = document.getElementById("playerInput").value.trim();
-            const resultDiv = document.getElementById("result");
-            resultDiv.innerHTML = "";
+  <script>
+    async function searchPlayer() {
+      const name = document.getElementById("playerInput").value.trim();
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "";
 
-            if (!name) {
-                resultDiv.innerHTML = "<p>請輸入球員姓名</p>";
-                return;
-            }
+      if (!name) {
+        resultDiv.innerHTML = "<p>請輸入球員姓名</p>";
+        return;
+      }
 
-            try {
-                const res = await fetch("http://127.0.0.1:5000/search/players", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name })
-                });
+      try {
+        const res = await fetch("http://127.0.0.1:5000/search/players", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name })
+        });
 
-                const data = await res.json();
+        const data = await res.json();
 
-                if (data.success) {
-                    const players = data.result;
+        if (data.success) {
+          const players = data.result;
 
-                    if (!Array.isArray(players) || players.length === 0) {
-                        resultDiv.innerHTML = "<p>找不到符合的球員</p>";
-                        return;
-                    }
+          if (!Array.isArray(players) || players.length === 0) {
+            resultDiv.innerHTML = "<p>找不到符合的球員</p>";
+            return;
+          }
 
-                    players.forEach(p => {
-                        const div = document.createElement("div");
-                        div.innerHTML = `
-                            <strong>${p.player_name}</strong> (#${p.number})<br>
-                            狀態: ${p.status}<br>
-                            球隊: ${p.team_name} (教練: ${p.manager_name})<br>
-                            聯盟: ${p.league_name}
-                            <hr>
-                        `;
-                        resultDiv.appendChild(div);
-                    });
+          players.forEach(p => {
+            const card = document.createElement("div");
+            card.className = "player-card";
+            card.innerHTML = `
+              <p><strong>${p.player_name}</strong> (#${p.number ?? ''})</p>
+              <p>狀態: ${p.status}</p>
+              <p>球隊: ${p.team_name} (教練: ${p.manager_name})</p>
+              <p>聯盟: ${p.league_name}</p>
+              <hr>
+            `;
+            resultDiv.appendChild(card);
+          });
 
-                } else {
-                    resultDiv.innerHTML = "<p>查詢失敗：" + data.error + "</p>";
-                }
-
-            } catch (err) {
-                resultDiv.innerHTML = "<p>發生錯誤：" + err + "</p>";
-            }
+        } else {
+          resultDiv.innerHTML = "<p>查詢失敗：" + data.error + "</p>";
         }
-    </script>
+
+      } catch (err) {
+        resultDiv.innerHTML = "<p>發生錯誤：" + err + "</p>";
+      }
+    }
+  </script>
 </body>
 </html>
