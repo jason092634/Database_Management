@@ -68,12 +68,12 @@
 
           if (data.success) {
             if (data.role === "Admin") {
-              messageEl.innerHTML = "以 Admin 身分註冊成功！3 秒後回到首頁...";
+              messageEl.innerHTML = "以 Admin 身分註冊成功！3 秒後跳轉至登入頁面...";
             } else {
-              messageEl.innerHTML = "註冊成功！3 秒後回到首頁...";
+              messageEl.innerHTML = "註冊成功！3 秒後跳轉至登入頁面...";
             }
             setTimeout(() => {
-              window.location.href = "http://127.0.0.1:5000/";
+              window.location.href = "http://127.0.0.1:5000/login";
             }, 3000);
           } else {
             messageEl.innerHTML = "註冊失敗：" + data.error;
