@@ -6,7 +6,7 @@
 本專案為資料庫系統期末專案，實作一套棒球數據查詢與統計系統。  
 後端使用 **Flask + PostgreSQL（結構化資料） + Redis（NoSQL 查詢次數計數器）**，提供隊伍、球員、比賽等數據查詢API，並額外使用 Redis 追蹤搜尋次數、記錄每次查詢行為，最後統計出搜尋次數排行榜。
 
-### 主要功能
+## 主要功能
 - 使用者帳號系統（註冊 / 登入 / 加密 / Token 驗證）
 - 球隊、球員、比賽查詢 API
 - PostgreSQL 儲存結構化資料
@@ -16,8 +16,6 @@
   - 比賽搜尋次數排行榜
 - 統計數據排行榜展示（打擊率、全壘打數等）
 - PostgreSQL 資料庫備份檔
-
----
 
 ## 安裝說明 (Installation Guide)
 
@@ -94,32 +92,64 @@ Response:
 ## 專案結構 (Project Structure)
 
 backend/
-│ app.py
+│ .gitattributes
+│ .gitignore
+│ .env
+│ pyvenv.cfg
 │ requirements.txt
+│ app.py
 │ config.py
-│ database_backup.sql
 │
 ├─routes/
-│   team_routes.py
-│   player_routes.py
-│   match_routes.py
-│   leaderboard_routes.py
+│   __init__.py
+│   admin_routes.py
 │   auth_routes.py
-│
-├─services/
-│   redis_service.py
-│   db_service.py
+│   follow_routes.py
+│   leaderboard_routes.py
+│   match_routes.py
+│   player_routes.py
+│   player_stats_routes.py
+│   search_board_routes.py
+│   team_routes.py
 │
 frontend/
-│ search_board.html
+│ admin.html
+│ dashboard.html
+│ follow.html
+│ index.html
 │ leaderboard.html
+│ login.html
+│ match_search.html
+│ player_search.html
+│ player_stats_search.html
+│ register.html
+│ search_board.html
+│ team_search.html
+│
+file/
+│ create_table.sql
+│
+├─csv/
+│   battingrecord.csv
+│   fieldingrecord.csv
+│   league.csv
+│   match.csv
+│   match_player.csv
+│   match_umpire.csv
+│   pitchingrecord.csv
+│   player.csv
+│   team.csv
+│   umpire.csv
+│
+DB_Backup.sql
+README.md
+.gitignore
 
 ## 組員名單
 
 資管三 B12705013 林志欣
 資管三 B12705044 黃夢恩
 地理三 B12208033 陳煒麟
-=
 
 ## 附註
 
