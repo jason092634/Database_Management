@@ -21,6 +21,7 @@
 
 ### 1. Clone 專案
 git clone https://github.com/jason092634/Database_Management.git
+
 cd <Database_Management>
 
 ### 2. Python 套件
@@ -92,57 +93,109 @@ Response:
 ## 專案結構 (Project Structure)
 
 backend/
+
 │ .gitattributes
+
 │ .gitignore
+
 │ .env
+
 │ pyvenv.cfg
+
 │ requirements.txt
+
 │ app.py
+
 │ config.py
+
 │
+
 ├─routes/
+
 │   __init__.py
+
 │   admin_routes.py
+
 │   auth_routes.py
+
 │   follow_routes.py
+
 │   leaderboard_routes.py
+
 │   match_routes.py
+
 │   player_routes.py
+
 │   player_stats_routes.py
+
 │   search_board_routes.py
+
 │   team_routes.py
+
 │
+
 frontend/
+
 │ admin.html
+
 │ dashboard.html
+
 │ follow.html
+
 │ index.html
+
 │ leaderboard.html
+
 │ login.html
+
 │ match_search.html
+
 │ player_search.html
+
 │ player_stats_search.html
+
 │ register.html
+
 │ search_board.html
+
 │ team_search.html
+
 │
+
 file/
+
 │ create_table.sql
+
 │
+
 ├─csv/
+
 │   battingrecord.csv
+
 │   fieldingrecord.csv
+
 │   league.csv
+
 │   match.csv
+
 │   match_player.csv
+
 │   match_umpire.csv
+
 │   pitchingrecord.csv
+
 │   player.csv
+
 │   team.csv
+
 │   umpire.csv
+
 │
+
 DB_Backup.sql
+
 README.md
+
 .gitignore
 
 ## 組員名單
