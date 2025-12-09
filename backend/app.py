@@ -3,7 +3,6 @@ from flask_cors import CORS
 import psycopg2
 from config import DB_CONFIG, REDIS_CONFIG
 from routes.team_routes import team_bp
-from routes.stat_board_routes import ranking_bp
 from routes.auth_routes import auth_bp
 from routes.player_routes import player_bp
 from routes.match_routes import match_bp
@@ -73,7 +72,6 @@ app.register_blueprint(auth_bp)
 
 # 查球隊
 app.register_blueprint(team_bp)
-app.register_blueprint(ranking_bp)
 
 # 查球員
 app.register_blueprint(player_bp)
@@ -90,8 +88,10 @@ app.register_blueprint(leaderboard_bp)
 # 追蹤球隊/球員
 app.register_blueprint(follow)
 
+# 查看搜尋紀錄
 app.register_blueprint(searchboard_bp)
 
+# 進入 admin 後台
 app.register_blueprint(admin_bp)
 
 # 啟動 Flask
