@@ -4,73 +4,146 @@
     <meta charset="UTF-8" />
     <title>管理員控制台</title>
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-      }
-      .tab-buttons {
-        margin-bottom: 20px;
-      }
-      .tab-buttons button {
-        margin-right: 10px;
-        padding: 10px 20px;
-        cursor: pointer;
-      }
-      .tab-content {
-        display: none;
-        padding: 20px;
-        border: 1px solid #ddd;
-      }
-      .tab-content.active {
-        display: block;
-      }
-      .form-container {
-        display: flex;
-        gap: 40px;
-      }
-      .form-box {
-        flex: 1;
-        border: 1px solid #ccc;
-        padding: 15px;
-        border-radius: 5px;
-      }
-      input,
-      select {
-        display: block;
-        margin-bottom: 10px;
-        padding: 5px;
-        width: 100%;
-      }
-      label {
-        margin-top: 10px;
-        display: block;
-      }
-      button.submit-btn {
-        margin-top: 10px;
-        padding: 8px 16px;
-        cursor: pointer;
-      }
-      h3 {
-        margin-top: 0;
-      }
-      .sub-tab-content {
-        display: none;
-        padding: 10px 0;
+      h1 {
+        text-align: center;
+        margin-bottom: 30px;
       }
 
+      /* Tab 按鈕 */
+      .tab-buttons,
+      .sub-tab-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .tab-buttons button,
+      .sub-tab-buttons button {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        padding: 8px 16px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+      }
+
+      .tab-buttons button:hover,
+      .sub-tab-buttons button:hover {
+        background-color: #0056b3;
+      }
+
+      /* 當前選中 tab 按鈕 */
+      .tab-buttons button.active,
+      .sub-tab-buttons button.active {
+        background-color: #0056b3;
+      }
+
+      /* Tab 內容 */
+      .tab-content,
+      .sub-tab-content {
+        display: none; /* 預設隱藏 */
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 6px;
+        box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+      }
+
+      /* 顯示當前 tab */
+      .tab-content.active,
       .sub-tab-content.active {
         display: block;
       }
 
-      .sub-tab-buttons button {
-        margin-right: 10px;
-        padding: 6px 12px;
+      /* 表單容器 */
+      .form-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+
+      /* 單個表單區塊 */
+      .form-box {
+        background-color: #f1f1f1;
+        padding: 15px;
+        border-radius: 6px;
+        flex: 1 1 300px;
+        min-width: 300px;
+      }
+
+      /* 表單標題 */
+      .form-box h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 18px;
+      }
+
+      /* 表單標籤 */
+      label {
+        display: block;
+        margin-top: 10px;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+
+      /* 表單輸入 */
+      input,
+      select {
+        width: 100%;
+        padding: 6px 8px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+      }
+
+      /* 按鈕 */
+      button.submit-btn {
+        margin-top: 15px;
+        background-color: #28a745;
+        color: #fff;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
         cursor: pointer;
       }
-      #batting-table input {
-        width: 60px;
-        padding: 2px;
+
+      button.submit-btn:hover {
+        background-color: #218838;
+      }
+
+      /* 表格樣式 */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+
+      /* 表格表頭樣式改為深色系 */
+      table th {
+        background-color: #b3efc3;
+        color: #000000;
+        padding: 6px;
         text-align: center;
+      }
+
+      /* 表格單元格 */
+      table td {
+        border: 1px solid #ccc;
+        padding: 6px;
+        text-align: center;
+      }
+
+      /* 可選：偶數列背景色稍微區分 */
+      table tr:nth-child(even) {
+        background-color: #f2f2f2;
+      }
+
+      /* 球員打擊 / 投球 / 守備表格容器 */
+      #batting-table,
+      #pitching-table,
+      #fielding-table {
+        overflow-x: auto;
       }
     </style>
   </head>

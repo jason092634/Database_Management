@@ -1,257 +1,286 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>追蹤球員與球隊</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-      }
-      h1 {
-        margin-bottom: 20px;
-      }
-      h2 {
-        cursor: pointer;
-        background-color: #eee;
-        padding: 10px;
-        border-radius: 5px;
-      }
-      table {
-        width: 90%;
-        border-collapse: collapse;
-        margin: 10px 0 20px 0;
-      }
-      th,
-      td {
-        border: 1px solid #333;
-        padding: 8px;
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>追蹤球員與球隊</title>
+<style>
+    body {
+        font-family: "Arial", sans-serif;
+        background-color: #f4f4f9;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        padding-top: 40px;
+    }
+
+    .container {
+        background: #ffffff;
+        width: 1000px;
+        padding: 35px 40px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    h1 {
         text-align: center;
-      }
-      th {
-        background-color: #ddd;
-      }
-      .section {
-        margin-bottom: 20px;
-      }
-      .hidden {
-        display: none;
-      }
-      .switch-buttons {
-        margin-bottom: 20px;
-      }
-      .switch-buttons button {
-        padding: 8px 16px;
-        margin-right: 10px;
+        margin-bottom: 25px;
+        color: #333;
+    }
+
+    h2 {
+        margin-top: 25px;
+        color: #333;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 5px;
         cursor: pointer;
-      }
-      .search-area {
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: center;
+    }
+
+    th {
+        background-color: #f0f0f0;
+    }
+
+    .section {
+        margin-bottom: 20px;
+        background-color: #f9f9f9;
+        padding: 12px 15px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .switch-buttons {
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .btn {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 6px;
+        font-size: 15px;
+        cursor: pointer;
+        margin-right: 10px;
+        color: white;
+        background-color: #007bff;
+        transition: background 0.2s;
+    }
+
+    .btn:hover {
+        background-color: #0056b3;
+    }
+
+    .search-area {
         margin: 10px 0 20px 0;
-      }
-      .search-area input[type="text"] {
+        text-align: center;
+    }
+
+    .search-area input[type="text"] {
         padding: 6px;
         width: 250px;
-      }
-      .search-area button {
+        border-radius: 4px;
+        border: 1px solid #ccc;
+    }
+
+    .search-area button {
         padding: 6px 12px;
         margin-left: 6px;
-      }
-      .follow-btn {
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        background-color: #28a745;
+        color: white;
+        transition: background 0.2s;
+    }
+
+    .search-area button:hover {
+        background-color: #1e7e34;
+    }
+
+    .follow-btn {
         padding: 4px 8px;
         cursor: pointer;
-      }
-      .info-text {
+        border-radius: 4px;
+        border: none;
+        background-color: #17a2b8;
+        color: white;
+        transition: background 0.2s;
+    }
+
+    .follow-btn:hover {
+        background-color: #117a8b;
+    }
+
+    .info-text {
         color: #555;
         font-size: 0.9rem;
         margin-bottom: 10px;
-      }
-    </style>
-  </head>
-  <body>
+    }
+
+</style>
+</head>
+<body>
+<div class="container">
     <h1>追蹤球員與球隊</h1>
 
-    <!-- 分頁切換按鈕 -->
     <div class="switch-buttons">
-      <button onclick="showTab('player')">追蹤球員</button>
-      <button onclick="showTab('team')">追蹤球隊</button>
-      <button onclick="location.href='dashboard.html'">回主畫面</button>
+        <button class="btn" onclick="showTab('player')">追蹤球員</button>
+        <button class="btn" onclick="showTab('team')">追蹤球隊</button>
+        <button class="btn" onclick="location.href='dashboard.html'">回主畫面</button>
     </div>
 
-    <!-- ===== 球員追蹤分頁  -->
+    <!-- 球員分頁 -->
     <div id="player-tab">
-      <!-- 已追蹤球員 -->
-      <div class="section">
-        <h2 onclick="toggleSection('followed-players-section')">
-          已追蹤球員列表 ▼
-        </h2>
-        <div id="followed-players-section">
-          <p class="info-text">以下為目前帳號追蹤中的球員。</p>
-          <table>
-            <thead>
-              <tr>
-                <th>球員 ID</th>
-                <th>姓名</th>
-                <th>背號</th>
-                <th>所屬球隊</th>
-                <th>追蹤時間</th>
-                <th>資訊</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="followed-players-body">
-              <!-- 用 JavaScript 動態填入 -->
-            </tbody>
-          </table>
+        <div class="section">
+            <h2 onclick="toggleSection('followed-players-section')">已追蹤球員列表 ▼</h2>
+            <div id="followed-players-section">
+                <p class="info-text">以下為目前帳號追蹤中的球員。</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>球員 ID</th>
+                            <th>姓名</th>
+                            <th>背號</th>
+                            <th>所屬球隊</th>
+                            <th>追蹤時間</th>
+                            <th>資訊</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="followed-players-body"></tbody>
+                </table>
+            </div>
         </div>
-      </div>
 
-      <!-- 球員最近十場比賽 -->
-      <div class="section">
-        <h2 onclick="toggleSection('player-recent-section')">
-          球員最近十場比賽 ▼
-        </h2>
-        <div id="player-recent-section">
-          <p class="info-text">
-            點擊「查看」後，會在下方顯示該球員最近 10 場比賽結果。
-          </p>
-          <table>
-            <thead>
-              <tr>
-                <th>比賽 ID</th>
-                <th>日期</th>
-                <th>場地</th>
-                <th>主隊</th>
-                <th>客隊</th>
-                <th>比數</th>
-              </tr>
-            </thead>
-            <tbody id="player-recent-body">
-              <tr>
-                <td colspan="6">尚未選擇球員</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="section">
+            <h2 onclick="toggleSection('player-recent-section')">球員最近十場比賽 ▼</h2>
+            <div id="player-recent-section">
+                <p class="info-text">點擊「查看」後，會在下方顯示該球員最近 10 場比賽結果。</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>比賽 ID</th>
+                            <th>日期</th>
+                            <th>場地</th>
+                            <th>主隊</th>
+                            <th>客隊</th>
+                            <th>比數</th>
+                        </tr>
+                    </thead>
+                    <tbody id="player-recent-body">
+                        <tr><td colspan="6">尚未選擇球員</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-      </div>
 
-      <!-- 查詢並追蹤球員 -->
-      <div class="section">
-        <h2 onclick="toggleSection('search-player-section')">
-          查詢球員並追蹤 ▼
-        </h2>
-        <div id="search-player-section">
-          <div class="search-area">
-            <input
-              type="text"
-              id="player-search-input"
-              placeholder="輸入球員姓名關鍵字"
-            />
-            <button onclick="searchPlayers()">查詢</button>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>球員 ID</th>
-                <th>姓名</th>
-                <th>背號</th>
-                <th>狀態</th>
-                <th>所屬球隊</th>
-                <th>聯盟</th>
-                <th>追蹤</th>
-              </tr>
-            </thead>
-            <tbody id="search-players-body">
-              <!-- 用 JavaScript 動態填入 -->
-            </tbody>
-          </table>
+        <div class="section">
+            <h2 onclick="toggleSection('search-player-section')">查詢球員並追蹤 ▼</h2>
+            <div id="search-player-section">
+                <div class="search-area">
+                    <input type="text" id="player-search-input" placeholder="輸入球員姓名關鍵字" />
+                    <button onclick="searchPlayers()">查詢</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>球員 ID</th>
+                            <th>姓名</th>
+                            <th>背號</th>
+                            <th>狀態</th>
+                            <th>所屬球隊</th>
+                            <th>聯盟</th>
+                            <th>追蹤</th>
+                        </tr>
+                    </thead>
+                    <tbody id="search-players-body"></tbody>
+                </table>
+            </div>
         </div>
-      </div>
     </div>
 
-    <!-- ===== 球隊追蹤分頁 ===== -->
+    <!-- 球隊分頁 -->
     <div id="team-tab" class="hidden">
-      <!-- 已追蹤球隊 -->
-      <div class="section">
-        <h2 onclick="toggleSection('followed-teams-section')">
-          已追蹤球隊列表 ▼
-        </h2>
-        <div id="followed-teams-section">
-          <p class="info-text">以下為目前帳號追蹤中的球隊。</p>
-          <table>
-            <thead>
-              <tr>
-                <th>球隊 ID</th>
-                <th>球隊名稱</th>
-                <th>總教練</th>
-                <th>追蹤時間</th>
-                <th>資訊</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="followed-teams-body">
-              <!-- 用 JavaScript 動態填入 -->
-            </tbody>
-          </table>
+        <div class="section">
+            <h2 onclick="toggleSection('followed-teams-section')">已追蹤球隊列表 ▼</h2>
+            <div id="followed-teams-section">
+                <p class="info-text">以下為目前帳號追蹤中的球隊。</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>球隊 ID</th>
+                            <th>球隊名稱</th>
+                            <th>總教練</th>
+                            <th>追蹤時間</th>
+                            <th>資訊</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="followed-teams-body"></tbody>
+                </table>
+            </div>
         </div>
-      </div>
 
-      <!-- 球隊最近十場比賽 -->
-      <div class="section">
-        <h2 onclick="toggleSection('team-recent-section')">
-          球隊最近十場比賽 ▼
-        </h2>
-        <div id="team-recent-section">
-          <p class="info-text">
-            點擊「查看」後，會在下方顯示該球隊最近 10 場比賽結果。
-          </p>
-          <table>
-            <thead>
-              <tr>
-                <th>比賽 ID</th>
-                <th>日期</th>
-                <th>場地</th>
-                <th>主隊</th>
-                <th>客隊</th>
-                <th>比數</th>
-              </tr>
-            </thead>
-            <tbody id="team-recent-body">
-              <tr>
-                <td colspan="6">尚未選擇球隊</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="section">
+            <h2 onclick="toggleSection('team-recent-section')">球隊最近十場比賽 ▼</h2>
+            <div id="team-recent-section">
+                <p class="info-text">點擊「查看」後，會在下方顯示該球隊最近 10 場比賽結果。</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>比賽 ID</th>
+                            <th>日期</th>
+                            <th>場地</th>
+                            <th>主隊</th>
+                            <th>客隊</th>
+                            <th>比數</th>
+                        </tr>
+                    </thead>
+                    <tbody id="team-recent-body">
+                        <tr><td colspan="6">尚未選擇球隊</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-      </div>
 
-      <!-- 查詢並追蹤球隊 -->
-      <div class="section">
-        <h2 onclick="toggleSection('search-team-section')">查詢球隊並追蹤 ▼</h2>
-        <div id="search-team-section">
-          <div class="search-area">
-            <input
-              type="text"
-              id="team-search-input"
-              placeholder="輸入球隊名稱關鍵字"
-            />
-            <button onclick="searchTeams()">查詢</button>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>球隊 ID</th>
-                <th>球隊名稱</th>
-                <th>總教練</th>
-                <th>聯盟</th>
-                <th>追蹤</th>
-              </tr>
-            </thead>
-            <tbody id="search-teams-body">
-              <!-- 用 JavaScript 動態填入 -->
-            </tbody>
-          </table>
+        <div class="section">
+            <h2 onclick="toggleSection('search-team-section')">查詢球隊並追蹤 ▼</h2>
+            <div id="search-team-section">
+                <div class="search-area">
+                    <input type="text" id="team-search-input" placeholder="輸入球隊名稱關鍵字" />
+                    <button onclick="searchTeams()">查詢</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>球隊 ID</th>
+                            <th>球隊名稱</th>
+                            <th>總教練</th>
+                            <th>聯盟</th>
+                            <th>追蹤</th>
+                        </tr>
+                    </thead>
+                    <tbody id="search-teams-body"></tbody>
+                </table>
+            </div>
         </div>
-      </div>
     </div>
+</div>
 
     <script>
       const BASE_URL = "http://127.0.0.1:5000";
@@ -584,5 +613,5 @@
       // 頁面初始載入球員分頁
       showTab("player");
     </script>
-  </body>
+</body>
 </html>
